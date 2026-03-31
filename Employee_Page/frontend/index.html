@@ -7,87 +7,272 @@
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #071a0f 0%, #0f3320 50%, #1a5c38 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .login-card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 48px 44px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.35);
+      text-align: center;
+    }
+
+    .logo-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+    .logo-wrap img {
+      height: 64px;
+      width: 64px;
+      object-fit: contain;
+    }
+    .logo-wrap .brand {
+      font-size: 22px;
+      font-weight: 800;
+      color: #1a4731;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .logo-wrap .tagline {
+      font-size: 11px;
+      color: #6b9e82;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1.5px solid #e8f0eb;
+      margin-bottom: 32px;
+    }
+
+    .welcome-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: #1a2e22;
+      margin-bottom: 8px;
+    }
+    .welcome-sub {
+      font-size: 14px;
+      color: #6b9e82;
+      margin-bottom: 36px;
+      line-height: 1.5;
+    }
+
+    /* Google button */
+    .google-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      padding: 14px 20px;
+      border: 2px solid #e0e8e3;
+      border-radius: 12px;
+      background: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      color: #1a2e22;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+    }
+    .google-btn:hover {
+      border-color: #1a4731;
+      background: #f0f7f3;
+      box-shadow: 0 4px 16px rgba(26,71,49,0.12);
+      transform: translateY(-1px);
+    }
+    .google-btn:active { transform: translateY(0); }
+    .google-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .google-btn svg { flex-shrink: 0; }
+
+    .info-box {
+      margin-top: 24px;
+      padding: 14px 16px;
+      background: #f0f7f3;
+      border-radius: 10px;
+      border-left: 3px solid #1a4731;
+      text-align: left;
+    }
+    .info-box p {
+      font-size: 12px;
+      color: #4a7060;
+      line-height: 1.6;
+    }
+    .info-box strong { color: #1a4731; }
+
+    .error-box {
+      margin-top: 20px;
+      padding: 14px 16px;
+      background: #fdecea;
+      border-radius: 10px;
+      border-left: 3px solid #c62828;
+      text-align: left;
+      display: none;
+    }
+    .error-box.warning {
+      background: #fff8e1;
+      border-left-color: #f57f17;
+    }
+    .error-box p {
+      font-size: 13px;
+      color: #c62828;
+      line-height: 1.5;
+    }
+    .error-box.warning p { color: #e65100; }
+
+    .register-link {
+      margin-top: 28px;
+      font-size: 13px;
+      color: #6b9e82;
+    }
+    .register-link a {
+      color: #1a4731;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .register-link a:hover { text-decoration: underline; }
+
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2.5px solid #c8e6c9;
+      border-top-color: #1a4731;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
-  <div class="auth-wrapper">
-    <div class="auth-card">
 
-      <div class="auth-logo">
-        <img src="logo-full.png" alt="Vegavruddhi Pvt. Ltd." />
-        <span class="tagline">IT &amp; Business Consultation Services</span>
-      </div>
-      <hr class="auth-divider" />
+  <div class="login-card">
+    <div class="logo-wrap">
+      <img src="logo-full.png" alt="Vegavruddhi" />
+      <div class="brand">Vegavruddhi</div>
+      <div class="tagline">IT &amp; Business Consultation Services</div>
+    </div>
 
-      <h2>Welcome Back</h2>
-      <p class="subtitle">Sign in to your employee account</p>
+    <hr class="divider" />
 
-      <div class="error-msg" id="errorMsg"></div>
+    <div class="welcome-title">Welcome Back 👋</div>
+    <p class="welcome-sub">Sign in with your registered Google account to access the employee portal.</p>
 
-      <form id="loginForm">
-        <div class="form-group">
-          <label for="email">Email Address</label>
-          <input type="email" id="email" placeholder="you@vegavruddhi.com" required />
-        </div>
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input type="password" id="password" placeholder="Enter your password" required />
-        </div>
-        <button type="submit" class="btn" id="loginBtn">Sign In</button>
-      </form>
+    <button class="google-btn" id="googleBtn" onclick="handleGoogleSignIn()">
+      <svg width="20" height="20" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        <path fill="none" d="M0 0h48v48H0z"/>
+      </svg>
+      <span id="btnText">Sign in with Google</span>
+      <div class="spinner" id="spinner"></div>
+    </button>
 
-      <div class="auth-link">
-        New joiner? <a href="register.html">Register here</a>
-      </div>
+    <div class="info-box">
+      <p>Use the <strong>email address you provided</strong> during registration (your joining email ID). Other Google accounts will not be accepted.</p>
+    </div>
+
+    <div class="error-box" id="errorBox">
+      <p id="errorText"></p>
+    </div>
+
+    <div class="register-link">
+      New joiner? <a href="register.html">Register here</a>
     </div>
   </div>
 
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script>
     if (localStorage.getItem('token')) window.location.href = 'dashboard.html';
 
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const errorMsg = document.getElementById('errorMsg');
-      const loginBtn = document.getElementById('loginBtn');
-      errorMsg.style.display = 'none';
-      loginBtn.textContent = 'Signing in...';
-      loginBtn.disabled = true;
+    const GOOGLE_CLIENT_ID = '175231524136-39m136pat1dpous6u9eijhfulpmpms1i.apps.googleusercontent.com';
 
+    function showError(msg, isWarning = false) {
+      const box  = document.getElementById('errorBox');
+      const text = document.getElementById('errorText');
+      box.className = 'error-box' + (isWarning ? ' warning' : '');
+      text.textContent = msg;
+      box.style.display = 'block';
+    }
+
+    function setLoading(loading) {
+      const btn     = document.getElementById('googleBtn');
+      const btnText = document.getElementById('btnText');
+      const spinner = document.getElementById('spinner');
+      btn.disabled        = loading;
+      btnText.textContent = loading ? 'Signing in…' : 'Sign in with Google';
+      spinner.style.display = loading ? 'block' : 'none';
+    }
+
+    function handleGoogleSignIn() {
+      document.getElementById('errorBox').style.display = 'none';
+
+      // Initialize Google One Tap / popup
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback:  onGoogleCredential,
+        ux_mode:   'popup',
+      });
+      google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          // Fallback: render button and click it
+          const parent = document.createElement('div');
+          parent.style.display = 'none';
+          document.body.appendChild(parent);
+          google.accounts.id.renderButton(parent, { type: 'standard' });
+          parent.querySelector('div[role=button]')?.click();
+        }
+      });
+    }
+
+    async function onGoogleCredential(response) {
+      setLoading(true);
       try {
-        const res  = await fetch('/api/auth/login', {
-          method: 'POST',
+        const res  = await fetch('/api/auth/google-login', {
+          method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email:    document.getElementById('email').value,
-            password: document.getElementById('password').value
-          })
+          body:    JSON.stringify({ credential: response.credential }),
         });
         const data = await res.json();
 
         if (!res.ok) {
-          errorMsg.textContent = data.message || 'Login failed';
-          errorMsg.style.display = 'block';
-          // Special styling for pending approval
-          if (res.status === 403) {
-            errorMsg.style.borderLeftColor = data.message.includes('pending') ? '#f57f17' : '#c62828';
-            errorMsg.style.background      = data.message.includes('pending') ? '#fff8e1' : '#fdecea';
-            errorMsg.style.color           = data.message.includes('pending') ? '#e65100' : '#c62828';
-          }
-          loginBtn.textContent = 'Sign In';
-          loginBtn.disabled = false;
+          const isWarning = res.status === 403;
+          showError(data.message || 'Sign-in failed', isWarning);
+          setLoading(false);
           return;
         }
 
-        localStorage.setItem('token', data.token);
+        localStorage.setItem('token',    data.token);
         localStorage.setItem('employee', JSON.stringify(data.employee));
         window.location.href = 'dashboard.html';
       } catch {
-        errorMsg.textContent = 'Server error. Please try again.';
-        errorMsg.style.display = 'block';
-        loginBtn.textContent = 'Sign In';
-        loginBtn.disabled = false;
+        showError('Server error. Please try again.');
+        setLoading(false);
       }
-    });
+    }
   </script>
 </body>
 </html>

@@ -5,6 +5,9 @@ const jwt      = require('jsonwebtoken');
 const multer   = require('multer');
 const path     = require('path');
 const Employee = require('../models/Employee');
+const { OAuth2Client } = require('google-auth-library');
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Storage for cv + photo
 const storage = multer.diskStorage({
@@ -71,6 +74,55 @@ router.post('/login', async (req, res) => {
     res.json({ token, employee: { newJoinerName: employee.newJoinerName, email: employee.email, position: employee.position, status: employee.status } });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+// POST /api/auth/google-login
+router.post('/google-login', async (req, res) => {
+  try {
+    const { credential } = req.body;
+    if (!credential) return res.status(400).json({ message: 'Google credential required' });
+
+    // Verify the Google ID token
+    const ticket = await googleClient.verifyIdToken({
+      idToken:  credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const googleEmail = payload.email.toLowerCase();
+
+    // Match against newJoinerEmailId (the joining email the employee registered with)
+    const employee = await Employee.findOne({
+      newJoinerEmailId: { $regex: new RegExp(`^${googleEmail}$`, 'i') }
+    });
+
+    if (!employee) {
+      return res.status(404).json({
+        message: 'No registered employee found with this Google account. Please use the email you provided during registration.'
+      });
+    }
+
+    if (employee.approvalStatus === 'pending') {
+      return res.status(403).json({ message: 'Your account is pending admin approval. Please wait.' });
+    }
+    if (employee.approvalStatus === 'rejected') {
+      return res.status(403).json({ message: 'Your account registration was rejected. Please contact admin.' });
+    }
+
+    const token = jwt.sign({ id: employee._id, email: employee.email }, process.env.JWT_SECRET, { expiresIn: '8h' });
+    res.json({
+      token,
+      employee: {
+        newJoinerName: employee.newJoinerName,
+        email:         employee.email,
+        position:      employee.position,
+        status:        employee.status,
+        picture:       payload.picture || '',
+      }
+    });
+  } catch (err) {
+    console.error('Google login error:', err.message);
+    res.status(401).json({ message: 'Google sign-in failed. Please try again.' });
   }
 });
 
