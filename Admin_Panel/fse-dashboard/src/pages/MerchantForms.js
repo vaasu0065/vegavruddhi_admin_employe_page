@@ -64,54 +64,79 @@ function exportToExcel(forms) {
 async function exportToGoogleSheets(forms, setExporting, setError) {
   setExporting(true);
   try {
-    // Request Google OAuth token with Sheets scope
+    const rows    = forms.map(flattenForm);
+    const headers = Object.keys(rows[0] || {});
+    const values  = [headers, ...rows.map(r => headers.map(h => r[h] || ''))];
+
     const tokenClient = window.google?.accounts?.oauth2?.initTokenClient({
       client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID,
       scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
       callback: async (tokenResponse) => {
-        if (tokenResponse.error) { setError('Google auth failed: ' + tokenResponse.error); setExporting(false); return; }
-        const accessToken = tokenResponse.access_token;
-        const rows = forms.map(flattenForm);
-        const headers = Object.keys(rows[0] || {});
-        const values  = [headers, ...rows.map(r => headers.map(h => r[h] || ''))];
+        try {
+          if (tokenResponse.error) {
+            setError('Google auth failed: ' + tokenResponse.error);
+            setExporting(false);
+            return;
+          }
+          const accessToken = tokenResponse.access_token;
 
-        // Create new spreadsheet
-        const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            properties: { title: `Merchant Forms ${new Date().toLocaleDateString('en-IN')}` },
-            sheets: [{ properties: { title: 'Merchant Forms' } }]
-          })
-        });
-        const sheet = await createRes.json();
-        const sheetId = sheet.spreadsheetId;
+          // Create new spreadsheet
+          const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              properties: { title: `Merchant Forms ${new Date().toLocaleDateString('en-IN')}` },
+              sheets: [{ properties: { title: 'Merchant Forms' } }]
+            })
+          });
+          const sheet   = await createRes.json();
+          const sheetId = sheet.spreadsheetId;
+          if (!sheetId) throw new Error('Failed to create spreadsheet');
 
-        // Write data
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1?valueInputOption=RAW`, {
-          method: 'PUT',
-          headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ values })
-        });
+          // Write data
+          await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1?valueInputOption=RAW`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ values })
+          });
 
-        // Bold header row + freeze
-        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ requests: [
-            { repeatCell: { range: { sheetId: 0, startRowIndex: 0, endRowIndex: 1 },
-              cell: { userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.1, green: 0.27, blue: 0.15 } } },
-              fields: 'userEnteredFormat(textFormat,backgroundColor)' }},
-            { updateSheetProperties: { properties: { sheetId: 0, gridProperties: { frozenRowCount: 1 } }, fields: 'gridProperties.frozenRowCount' }},
-            { autoResizeDimensions: { dimensions: { sheetId: 0, dimension: 'COLUMNS', startIndex: 0, endIndex: headers.length } }}
-          ]})
-        });
+          // Format: bold header, freeze row, auto-resize
+          await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ requests: [
+              { repeatCell: {
+                  range: { sheetId: 0, startRowIndex: 0, endRowIndex: 1 },
+                  cell: { userEnteredFormat: {
+                    textFormat: { bold: true, foregroundColor: { red: 1, green: 1, blue: 1 } },
+                    backgroundColor: { red: 0.1, green: 0.27, blue: 0.15 }
+                  }},
+                  fields: 'userEnteredFormat(textFormat,backgroundColor)'
+              }},
+              { updateSheetProperties: {
+                  properties: { sheetId: 0, gridProperties: { frozenRowCount: 1 } },
+                  fields: 'gridProperties.frozenRowCount'
+              }},
+              { autoResizeDimensions: {
+                  dimensions: { sheetId: 0, dimension: 'COLUMNS', startIndex: 0, endIndex: headers.length }
+              }}
+            ]})
+          });
 
-        // Open the sheet in new tab
-        window.open(`https://docs.google.com/spreadsheets/d/${sheetId}`, '_blank');
-        setExporting(false);
+          window.open(`https://docs.google.com/spreadsheets/d/${sheetId}`, '_blank');
+        } catch (err) {
+          setError('Export failed: ' + err.message);
+        } finally {
+          setExporting(false);
+        }
       }
     });
+
+    if (!tokenClient) {
+      setError('Google API not loaded yet. Please wait a moment and try again.');
+      setExporting(false);
+      return;
+    }
     tokenClient.requestAccessToken();
   } catch (err) {
     setError('Export failed: ' + err.message);
