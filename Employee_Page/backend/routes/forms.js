@@ -85,7 +85,7 @@ router.delete('/delete/:id', verifyToken, async (req, res) => {
   }
 });
 
-module.exports = router;N ROUTES (no auth required for admin panel access) ──────────────
+// ── ADMIN ROUTES (no auth required for admin panel access) ──────────────
 
 // GET /api/forms/admin/all — all forms grouped by employee
 router.get('/admin/all', async (req, res) => {
