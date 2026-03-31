@@ -481,6 +481,17 @@
         });
         const data = await res.json();
 
+        if (res.status === 409 && data.duplicate) {
+          // Show duplicate popup
+          document.getElementById('dupMerchantName').textContent = payload.customerName;
+          document.getElementById('dupProduct').textContent      = payload.formFillingFor;
+          document.getElementById('dupExistingId').value         = data.existingId;
+          document.getElementById('dupModal').style.display      = 'flex';
+          submitBtn.textContent = '✓ Submit Form Response';
+          submitBtn.disabled = false;
+          return;
+        }
+
         if (!res.ok) {
           errorMsg.textContent = data.message || 'Submission failed';
           errorMsg.style.display = 'block';
@@ -500,6 +511,38 @@
       }
     });
   </script>
+  <!-- DUPLICATE MERCHANT MODAL -->
+  <div id="dupModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:16px; padding:32px 28px; max-width:440px; width:90%; box-shadow:0 8px 40px rgba(0,0,0,0.2); text-align:center;">
+      <div style="font-size:48px; margin-bottom:12px;">⚠️</div>
+      <h3 style="color:#1a4731; font-size:18px; font-weight:800; margin-bottom:8px;">Duplicate Entry Detected</h3>
+      <p style="color:#555; font-size:14px; line-height:1.6; margin-bottom:20px;">
+        You have already submitted a form for<br/>
+        <strong id="dupMerchantName" style="color:#1a4731;"></strong>
+        with product <strong id="dupProduct" style="color:#1a4731;"></strong>.<br/><br/>
+        If the details are different, please edit the existing entry instead.
+      </p>
+      <input type="hidden" id="dupExistingId" />
+      <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+        <button onclick="document.getElementById('dupModal').style.display='none'"
+          style="padding:10px 22px; border:1.5px solid #dde8dd; border-radius:8px; background:#fff; color:#1a4731; font-weight:700; font-size:14px; cursor:pointer;">
+          Cancel
+        </button>
+        <button onclick="goToEdit()"
+          style="padding:10px 22px; border:none; border-radius:8px; background:#1a4731; color:#fff; font-weight:700; font-size:14px; cursor:pointer;">
+          Edit Existing Entry
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function goToEdit() {
+      const id = document.getElementById('dupExistingId').value;
+      window.location.href = 'merchant-detail.html?id=' + id;
+    }
+  </script>
+
   <footer class="footer">
     <div class="footer-track">
       <div class="footer-item"><img src="logo-full.png" alt="" class="footer-logo"/><span class="footer-text">Vegavruddhi Pvt. Ltd.</span><span class="footer-dot">·</span><span class="footer-tagline">IT &amp; Business Consultation Services</span></div>

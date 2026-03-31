@@ -4,6 +4,7 @@ import ProductDashboard from "./pages/ProductDashboard";
 import Login from "./pages/Login";
 import VerificationRules from "./pages/VerificationRules";
 import EmployeeApprovals from "./pages/EmployeeApprovals";
+import MerchantForms from "./pages/MerchantForms";
 
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -28,13 +29,15 @@ function App() {
   const [page, setPage] = useState("overview");
   const [pendingCount, setPendingCount] = useState(0);
 
+  const EMP_BASE = process.env.REACT_APP_EMPLOYEE_API_URL || 'http://localhost:4000/api';
+
   // Poll for pending employees every 30 seconds
   useEffect(() => {
     const fetchPending = async () => {
       try {
         const [empRes, posRes] = await Promise.all([
-          fetch('http://localhost:3000/api/auth/pending'),
-          fetch('http://localhost:3000/api/auth/position-requests')
+          fetch(`${EMP_BASE}/auth/pending`),
+          fetch(`${EMP_BASE}/auth/position-requests`)
         ]);
         const empData = await empRes.json();
         const posData = await posRes.json();
@@ -198,6 +201,7 @@ function App() {
           >
             <Tab value="overview"      label="Overview" />
             <Tab value="products"      label="Products" />
+            <Tab value="merchants"     label="Merchant Forms" />
             <Tab value="verification"  label="Verification Rules" />
             <Tab value="approvals" label={
               <Badge badgeContent={pendingCount} color="error" max={99} sx={{ '& .MuiBadge-badge': { right: -8, top: -2 } }}>
@@ -272,6 +276,7 @@ function App() {
       >
         {page === "overview"     ? <Dashboard /> :
          page === "products"     ? <ProductDashboard /> :
+         page === "merchants"    ? <MerchantForms /> :
          page === "verification" ? <VerificationRules token={user?.token} /> :
          page === "approvals"    ? <EmployeeApprovals /> : null}
       </Box>
