@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vegavruddhi – Employee Dashboard</title>
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-logo">
+      <a href="dashboard.html"><img src="logo-full.png" alt="Vegavruddhi Pvt. Ltd." /></a>
+    </div>
+    <div class="nav-right">
+      <div class="nav-profile" id="profileToggle">
+        <div class="nav-avatar" id="navAvatar">?</div>
+        <div class="nav-info">
+          <div class="name" id="navName">Loading...</div>
+          <div class="status-badge" id="navStatus">Active</div>
+        </div>
+        <span class="nav-chevron">&#9662;</span>
+        <div class="dropdown-menu" id="dropdownMenu">
+          <div class="dropdown-header">
+            <div class="dh-name"  id="ddName">-</div>
+            <div class="dh-email" id="ddEmail">-</div>
+          </div>
+          <a href="dashboard.html" onclick="event.stopPropagation()">&#127968;&nbsp; Dashboard</a>
+          <a href="profile.html"   onclick="event.stopPropagation()">&#128100;&nbsp; My Profile</a>
+          <a href="#" class="logout" id="logoutBtn" onclick="event.stopPropagation()">&#128682;&nbsp; Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-content">
+
+    <div class="welcome-card">
+      <div class="welcome-avatar" id="welcomeAvatar">?</div>
+      <div class="welcome-text">
+        <h2 id="welcomeName">Welcome!</h2>
+        <p  id="welcomeSub">Loading your profile...</p>
+      </div>
+      <a href="profile.html" class="profile-btn">View My Profile &#8250;</a>
+    </div>
+
+    <div id="posReqBanner" style="display:none;margin-bottom:16px;"></div>
+
+    <div class="section-title">Quick Overview</div>
+    <div class="info-grid">
+      <div class="info-card dash-card">
+        <div class="dash-icon">&#128188;</div>
+        <div class="label">Position</div>
+        <div class="value" id="quickPosition">-</div>
+      </div>
+      <div class="info-card dash-card">
+        <div class="dash-icon">&#128205;</div>
+        <div class="label">Location</div>
+        <div class="value" id="quickLocation">-</div>
+      </div>
+      <div class="info-card dash-card">
+        <div class="dash-icon">&#128100;</div>
+        <div class="label">Reporting Manager</div>
+        <div class="value" id="quickManager">-</div>
+      </div>
+      <div class="info-card dash-card">
+        <div class="dash-icon">&#9679;</div>
+        <div class="label">Status</div>
+        <div class="value" id="quickStatus">-</div>
+      </div>
+    </div>
+
+    <div class="section-title" style="margin-top:28px;">Actions</div>
+    <a href="merchant-form.html" class="action-card">
+      <div class="action-icon">&#128203;</div>
+      <div class="action-text">
+        <div class="action-title">Fill Merchant Visit Form</div>
+        <div class="action-sub">Submit details after a merchant meeting</div>
+      </div>
+      <div class="action-arrow">&#8250;</div>
+    </a>
+
+    <!-- KPI Cards -->
+    <div class="kpi-row" style="margin-top:24px;">
+      <div class="kpi-card kpi-total"    id="kpi_card_all"      onclick="filterByKPI('all')">
+        <div class="kpi-label">Total Responses</div>
+        <div class="kpi-value" id="kpi_total">-</div>
+      </div>
+      <div class="kpi-card kpi-onboard"  id="kpi_card_onboard"  onclick="filterByKPI('onboard')">
+        <div class="kpi-label">Ready for Onboarding</div>
+        <div class="kpi-value" id="kpi_onboard">-</div>
+      </div>
+      <div class="kpi-card kpi-notint"   id="kpi_card_notint"   onclick="filterByKPI('notint')">
+        <div class="kpi-label">Not Interested</div>
+        <div class="kpi-value" id="kpi_notint">-</div>
+      </div>
+      <div class="kpi-card kpi-error"    id="kpi_card_error"    onclick="filterByKPI('error')">
+        <div class="kpi-label">Try but not done</div>
+        <div class="kpi-value" id="kpi_error">-</div>
+      </div>
+      <div class="kpi-card kpi-revisit"  id="kpi_card_revisit"  onclick="filterByKPI('revisit')">
+        <div class="kpi-label">Need to visit again</div>
+        <div class="kpi-value" id="kpi_revisit">-</div>
+      </div>
+      <div class="kpi-card kpi-verified" id="kpi_card_verified" onclick="filterByKPI('verified')">
+        <div class="kpi-label">Fully Verified</div>
+        <div class="kpi-value" id="kpi_verified">-</div>
+      </div>
+    </div>
+
+    <!-- My Merchants -->
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:28px;margin-bottom:14px;">
+      <div class="section-title" style="margin:0;">My Merchants</div>
+      <div class="date-filter-bar">
+        <button class="date-filter-btn active" data-filter="all">All</button>
+        <button class="date-filter-btn" data-filter="today">Today</button>
+        <button class="date-filter-btn" data-filter="week">This Week</button>
+        <button class="date-filter-btn" data-filter="month">This Month</button>
+        <div class="date-filter-custom">
+          <input type="date" id="filterFrom" />
+          <span style="color:#888;font-size:12px;">to</span>
+          <input type="date" id="filterTo" />
+          <button class="date-filter-btn" id="applyRange">Apply</button>
+        </div>
+      </div>
+    </div>
+    <div id="merchantsCount" class="merchants-count"></div>
+    <div id="merchantsList"><div class="merchants-loading">Loading merchants...</div></div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="footer-track">
+      <div class="footer-item"><img src="logo-full.png" alt="" class="footer-logo"/><span class="footer-text">Vegavruddhi Pvt. Ltd.</span><span class="footer-dot">&#183;</span><span class="footer-tagline">IT &amp; Business Consultation Services</span></div>
+      <div class="footer-item"><img src="logo-full.png" alt="" class="footer-logo"/><span class="footer-text">Vegavruddhi Pvt. Ltd.</span><span class="footer-dot">&#183;</span><span class="footer-tagline">IT &amp; Business Consultation Services</span></div>
+      <div class="footer-item"><img src="logo-full.png" alt="" class="footer-logo"/><span class="footer-text">Vegavruddhi Pvt. Ltd.</span><span class="footer-dot">&#183;</span><span class="footer-tagline">IT &amp; Business Consultation Services</span></div>
+      <div class="footer-item"><img src="logo-full.png" alt="" class="footer-logo"/><span class="footer-text">Vegavruddhi Pvt. Ltd.</span><span class="footer-dot">&#183;</span><span class="footer-tagline">IT &amp; Business Consultation Services</span></div>
+      <div class="footer-item"><img src="logo-full.png" alt="" class="footer-logo"/><span class="footer-text">Vegavruddhi Pvt. Ltd.</span><span class="footer-dot">&#183;</span><span class="footer-tagline">IT &amp; Business Consultation Services</span></div>
+      <div class="footer-item"><img src="logo-full.png" alt="" class="footer-logo"/><span class="footer-text">Vegavruddhi Pvt. Ltd.</span><span class="footer-dot">&#183;</span><span class="footer-tagline">IT &amp; Business Consultation Services</span></div>
+    </div>
+  </footer>
+
+  <script>
+    var token = localStorage.getItem('token');
+    if (!token) window.location.href = 'index.html';
+
+    document.getElementById('profileToggle').addEventListener('click', function(e) {
+      if (e.target.closest('a')) return;
+      document.getElementById('dropdownMenu').classList.toggle('open');
+    });
+    document.addEventListener('click', function(e) {
+      if (!document.getElementById('profileToggle').contains(e.target))
+        document.getElementById('dropdownMenu').classList.remove('open');
+    });
+    document.getElementById('logoutBtn').addEventListener('click', function(e) {
+      e.preventDefault(); localStorage.clear(); window.location.href = 'index.html';
+    });
+
+    function loadProfile() {
+      fetch('/api/auth/profile', { headers: { 'Authorization': 'Bearer ' + token } })
+      .then(function(r) {
+        if (r.status === 401) { localStorage.clear(); window.location.href = 'index.html'; }
+        return r.json();
+      })
+      .then(function(emp) {
+        var initials = emp.newJoinerName.split(' ').map(function(n){ return n[0]; }).join('').toUpperCase().slice(0,2);
+        if (emp.photoFileName) {
+          document.getElementById('navAvatar').innerHTML = '<img src="/uploads/' + emp.photoFileName + '" alt="photo"/>';
+          document.getElementById('welcomeAvatar').innerHTML = '<img src="/uploads/' + emp.photoFileName + '" alt="photo"/>';
+        } else {
+          document.getElementById('navAvatar').textContent = initials;
+          document.getElementById('welcomeAvatar').textContent = initials;
+        }
+        document.getElementById('navName').textContent     = emp.newJoinerName;
+        document.getElementById('navStatus').textContent   = emp.status;
+        document.getElementById('ddName').textContent      = emp.newJoinerName;
+        document.getElementById('ddEmail').textContent     = emp.email;
+        document.getElementById('welcomeName').textContent = 'Welcome, ' + emp.newJoinerName.split(' ')[0] + '!';
+        document.getElementById('welcomeSub').textContent  = emp.position + '  \u00b7  ' + emp.location;
+        document.getElementById('quickPosition').textContent = emp.position;
+        document.getElementById('quickLocation').textContent = emp.location;
+        document.getElementById('quickManager').textContent  = emp.reportingManager;
+        document.getElementById('quickStatus').textContent   = emp.status;
+      })
+      .catch(function(err) { console.error('Profile load failed', err); });
+    }
+    loadProfile();
+
+    var allForms     = [];
+    var _verifiedMap = {};
+    var _activeKPI   = 'all';
+
+    var statusColor = {
+      'Ready for Onboarding':          '#2e7d32',
+      'Not Interested':                '#c62828',
+      'Try but not done due to error': '#e65100',
+      'Need to visit again':           '#1565c0'
+    };
+    var statusBg = {
+      'Ready for Onboarding':          '#e6f4ea',
+      'Not Interested':                '#fdecea',
+      'Try but not done due to error': '#fff3e0',
+      'Need to visit again':           '#e3f2fd'
+    };
+
+    function filterByKPI(type) {
+      _activeKPI = (_activeKPI === type) ? 'all' : type;
+      document.querySelectorAll('.kpi-card').forEach(function(c) { c.classList.remove('kpi-active'); });
+      if (_activeKPI !== 'all') {
+        var card = document.getElementById('kpi_card_' + _activeKPI);
+        if (card) card.classList.add('kpi-active');
+      }
+      applyFilters();
+    }
+
+    function applyFilters() {
+      var now   = new Date();
+      var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      var activeBtn = document.querySelector('.date-filter-btn.active[data-filter]');
+      var preset    = activeBtn ? activeBtn.dataset.filter : 'all';
+      var filtered  = allForms.slice();
+
+      if (preset === 'today') {
+        filtered = filtered.filter(function(f) { return new Date(f.createdAt) >= today; });
+      } else if (preset === 'week') {
+        var ws = new Date(today); ws.setDate(today.getDate() - today.getDay());
+        filtered = filtered.filter(function(f) { return new Date(f.createdAt) >= ws; });
+      } else if (preset === 'month') {
+        var ms = new Date(now.getFullYear(), now.getMonth(), 1);
+        filtered = filtered.filter(function(f) { return new Date(f.createdAt) >= ms; });
+      }
+
+      if (_activeKPI === 'onboard')  filtered = filtered.filter(function(f) { return f.status === 'Ready for Onboarding'; });
+      if (_activeKPI === 'notint')   filtered = filtered.filter(function(f) { return f.status === 'Not Interested'; });
+      if (_activeKPI === 'error')    filtered = filtered.filter(function(f) { return f.status === 'Try but not done due to error'; });
+      if (_activeKPI === 'revisit')  filtered = filtered.filter(function(f) { return f.status === 'Need to visit again'; });
+      if (_activeKPI === 'verified') filtered = filtered.filter(function(f) {
+        return _verifiedMap[f.customerNumber] && _verifiedMap[f.customerNumber].status === 'Fully Verified';
+      });
+
+      renderMerchants(filtered);
+    }
+
+    document.querySelectorAll('.date-filter-btn[data-filter]').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.date-filter-btn[data-filter]').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        document.getElementById('filterFrom').value = '';
+        document.getElementById('filterTo').value   = '';
+        applyFilters();
+      });
+    });
+
+    document.getElementById('applyRange').addEventListener('click', function() {
+      var from = document.getElementById('filterFrom').value;
+      var to   = document.getElementById('filterTo').value;
+      if (!from && !to) return;
+      document.querySelectorAll('.date-filter-btn[data-filter]').forEach(function(b) { b.classList.remove('active'); });
+      var filtered = allForms.filter(function(f) {
+        var d = new Date(f.createdAt);
+        if (from && d < new Date(from)) return false;
+        if (to   && d > new Date(to + 'T23:59:59')) return false;
+        return true;
+      });
+      if (_activeKPI === 'onboard')  filtered = filtered.filter(function(f) { return f.status === 'Ready for Onboarding'; });
+      if (_activeKPI === 'notint')   filtered = filtered.filter(function(f) { return f.status === 'Not Interested'; });
+      if (_activeKPI === 'error')    filtered = filtered.filter(function(f) { return f.status === 'Try but not done due to error'; });
+      if (_activeKPI === 'revisit')  filtered = filtered.filter(function(f) { return f.status === 'Need to visit again'; });
+      if (_activeKPI === 'verified') filtered = filtered.filter(function(f) {
+        return _verifiedMap[f.customerNumber] && _verifiedMap[f.customerNumber].status === 'Fully Verified';
+      });
+      renderMerchants(filtered);
+    });
+
+    function updateKPIs(forms, verifiedMap) {
+      document.getElementById('kpi_total').textContent   = forms.length;
+      document.getElementById('kpi_onboard').textContent = forms.filter(function(f){ return f.status === 'Ready for Onboarding'; }).length;
+      document.getElementById('kpi_notint').textContent  = forms.filter(function(f){ return f.status === 'Not Interested'; }).length;
+      document.getElementById('kpi_error').textContent   = forms.filter(function(f){ return f.status === 'Try but not done due to error'; }).length;
+      document.getElementById('kpi_revisit').textContent = forms.filter(function(f){ return f.status === 'Need to visit again'; }).length;
+      if (verifiedMap) {
+        document.getElementById('kpi_verified').textContent = forms.filter(function(f){
+          return verifiedMap[f.customerNumber] && verifiedMap[f.customerNumber].status === 'Fully Verified';
+        }).length;
+      }
+    }
+
+    function renderMerchants(forms) {
+      updateKPIs(forms, Object.keys(_verifiedMap).length ? _verifiedMap : null);
+      var container = document.getElementById('merchantsList');
+      var countEl   = document.getElementById('merchantsCount');
+      if (!forms.length) {
+        container.innerHTML = '<div class="merchants-empty">No merchants found.</div>';
+        countEl.textContent = '';
+        return;
+      }
+      countEl.textContent = forms.length + ' merchant' + (forms.length > 1 ? 's' : '') + ' found';
+
+      var phones   = forms.map(function(f){ return f.customerNumber; }).join(',');
+      var names    = forms.map(function(f){ return encodeURIComponent(f.customerName); }).join(',');
+      var products = forms.map(function(f){ return encodeURIComponent(f.formFillingFor || ''); }).join(',');
+
+      fetch('/api/verify/bulk?phones=' + encodeURIComponent(phones) + '&names=' + names + '&products=' + products, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(verifiedMap) {
+        _verifiedMap = verifiedMap;
+        updateKPIs(forms, verifiedMap);
+        var badgeMap = {
+          'Fully Verified': { bg:'#e6f4ea', color:'#2e7d32', icon:'\u2713' },
+          'Partially Done': { bg:'#fff8e1', color:'#f57f17', icon:'\u25d1' },
+          'Not Verified':   { bg:'#fdecea', color:'#c62828', icon:'\u2717' },
+          'Not Found':      { bg:'#f5f5f5', color:'#888',    icon:'\u2013' }
+        };
+        container.innerHTML = forms.map(function(f) {
+          var info    = verifiedMap[f.customerNumber] || {};
+          var vstatus = info.status || 'Not Found';
+          var b       = badgeMap[vstatus] || badgeMap['Not Found'];
+          var badge   = '<span class="verify-badge" style="background:' + b.bg + ';color:' + b.color + ';border-color:' + b.bg + '">' + b.icon + ' ' + vstatus + '</span>';
+          var phoneBadge = '';
+          if (info.inSheet === true) {
+            phoneBadge = info.phoneMatch
+              ? '<span class="phone-match-badge match">&#128222; Number Matched</span>'
+              : '<span class="phone-match-badge mismatch">&#9888; Number Mismatch</span>';
+          } else if (info.inSheet === false) {
+            phoneBadge = '<span class="phone-match-badge notfound">&#128222; Not in Sheet</span>';
+          }
+          var sc = statusColor[f.status] || '#333';
+          var sb = statusBg[f.status]    || '#f5f5f5';
+          var product = f.formFillingFor || (f.attemptedProducts && f.attemptedProducts.join(', ')) || '-';
+          var dateStr = new Date(f.createdAt).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'});
+          return '<a class="merchant-row" href="merchant-detail.html?id=' + f._id + '">'
+            + '<div class="mr-avatar">' + f.customerName.charAt(0).toUpperCase() + '</div>'
+            + '<div class="mr-info">'
+            + '<div class="mr-name">' + f.customerName + '</div>'
+            + '<div class="mr-badges">' + phoneBadge + ' ' + badge + '</div>'
+            + '<div class="mr-meta">'
+            + '<span>&#128205; ' + f.location + '</span>'
+            + '<span>&#128196; ' + product + '</span>'
+            + '<span>&#128222; ' + f.customerNumber + '</span>'
+            + '</div></div>'
+            + '<div class="mr-right">'
+            + '<span class="mr-status" style="color:' + sc + ';background:' + sb + '">' + f.status + '</span>'
+            + '<div class="mr-date">' + dateStr + '</div>'
+            + '</div></a>';
+        }).join('');
+      })
+      .catch(function() {
+        container.innerHTML = forms.map(function(f) {
+          var sc = statusColor[f.status] || '#333';
+          var sb = statusBg[f.status]    || '#f5f5f5';
+          var dateStr = new Date(f.createdAt).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'});
+          return '<a class="merchant-row" href="merchant-detail.html?id=' + f._id + '">'
+            + '<div class="mr-avatar">' + f.customerName.charAt(0).toUpperCase() + '</div>'
+            + '<div class="mr-info"><div class="mr-name">' + f.customerName + '</div>'
+            + '<div class="mr-meta"><span>&#128205; ' + f.location + '</span>'
+            + '<span>&#128196; ' + (f.formFillingFor || '-') + '</span>'
+            + '<span>&#128222; ' + f.customerNumber + '</span></div></div>'
+            + '<div class="mr-right"><span class="mr-status" style="color:' + sc + ';background:' + sb + '">' + f.status + '</span>'
+            + '<div class="mr-date">' + dateStr + '</div></div></a>';
+        }).join('');
+      });
+    }
+
+    function loadMerchants() {
+      fetch('/api/forms/my', { headers: { 'Authorization': 'Bearer ' + token } })
+      .then(function(r){ return r.json(); })
+      .then(function(data) {
+        allForms = data;
+        if (!allForms.length) {
+          document.getElementById('merchantsList').innerHTML = '<div class="merchants-empty">No merchant visits yet. Fill your first form above.</div>';
+          updateKPIs([], null);
+          return;
+        }
+        applyFilters();
+      })
+      .catch(function(err){ console.error('Failed to load merchants', err); });
+    }
+    loadMerchants();
+
+    function checkRequestNotifications() {
+      fetch('/api/requests/my-notifications', { headers: { 'Authorization': 'Bearer ' + token } })
+      .then(function(r){ return r.json(); })
+      .then(function(requests) {
+        var unacked = requests.filter(function(r){ return !r.acknowledged; });
+        var banner  = document.getElementById('posReqBanner');
+        if (!unacked.length) { banner.style.display = 'none'; return; }
+        banner.innerHTML = unacked.map(function(req) {
+          var isApproved = req.status === 'approved';
+          var typeLabel  = req.type === 'profile_change' ? 'Profile Change'
+                         : req.type === 'merchant_edit'  ? 'Merchant Edit'
+                         : req.type === 'merchant_delete'? 'Merchant Delete' : 'Position Change';
+          var bg     = isApproved ? '#e6f4ea' : '#fdecea';
+          var border = isApproved ? '#a8d5b5' : '#f5a5a5';
+          var color  = isApproved ? '#2e7d32' : '#c62828';
+          var icon   = isApproved ? '\u2705' : '\u274c';
+          var title  = isApproved ? 'Request Approved' : 'Request Rejected';
+          var msg    = isApproved
+            ? 'Your <b>' + typeLabel + '</b> request has been <b>approved</b> by the admin.'
+            : 'Your <b>' + typeLabel + '</b> request has been <b>rejected</b> by the admin.';
+          return '<div style="background:' + bg + ';border:1.5px solid ' + border + ';border-radius:12px;padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;">'
+            + '<div style="display:flex;align-items:center;gap:12px;">'
+            + '<span style="font-size:20px;">' + icon + '</span>'
+            + '<div><div style="font-size:14px;font-weight:700;color:' + color + ';font-family:var(--font);">' + title + '</div>'
+            + '<div style="font-size:12px;color:' + color + ';margin-top:2px;font-family:var(--font);">' + msg + '</div></div></div>'
+            + '<button onclick="acknowledgeRequest(\'' + req._id + '\', this)" style="padding:6px 16px;background:' + color + ';color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);">Got it</button>'
+            + '</div>';
+        }).join('');
+        banner.style.display = 'block';
+      })
+      .catch(function(){});
+    }
+
+    function acknowledgeRequest(id, btn) {
+      fetch('/api/requests/' + id + '/acknowledge', { method: 'PUT', headers: { 'Authorization': 'Bearer ' + token } })
+      .then(function() {
+        btn.closest('div').remove();
+        var banner = document.getElementById('posReqBanner');
+        if (!banner.children.length) banner.style.display = 'none';
+      })
+      .catch(function(){});
+    }
+
+    checkRequestNotifications();
+    setInterval(checkRequestNotifications, 10000);
+  </script>
+
+</body>
+</html>

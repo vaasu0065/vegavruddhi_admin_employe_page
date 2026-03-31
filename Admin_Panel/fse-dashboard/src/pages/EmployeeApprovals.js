@@ -14,7 +14,7 @@ import PersonIcon       from '@mui/icons-material/Person';
 import EditIcon         from '@mui/icons-material/Edit';
 import { BRAND }        from '../theme';
 
-const EMP_API = 'http://localhost:3000/api/auth';
+const EMP_API = (process.env.REACT_APP_EMPLOYEE_API_URL || 'http://localhost:4000/api') + '/auth';
 
 function initials(name) {
   return (name || '?').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -151,20 +151,20 @@ export default function EmployeeApprovals() {
   const loadChangeRequests = async () => {
     setChangeReqLoading(true);
     try {
-      const res  = await fetch('http://localhost:3000/api/requests/all');
+      const res  = await fetch('http://localhost:4000/api/requests/all');
       const data = await res.json();
       setChangeRequests(Array.isArray(data) ? data : []);
     } catch { } finally { setChangeReqLoading(false); }
   };
 
   const approveChangeReq = async (id) => {
-    const res = await fetch(`http://localhost:3000/api/requests/${id}/approve`, { method: 'PUT' });
+    const res = await fetch(`http://localhost:4000/api/requests/${id}/approve`, { method: 'PUT' });
     if (res.ok) { setSnack({ open: true, msg: 'Request approved and applied!', sev: 'success' }); loadChangeRequests(); load(); }
     else setSnack({ open: true, msg: 'Failed', sev: 'error' });
   };
 
   const rejectChangeReq = async (id) => {
-    const res = await fetch(`http://localhost:3000/api/requests/${id}/reject`, { method: 'PUT' });
+    const res = await fetch(`http://localhost:4000/api/requests/${id}/reject`, { method: 'PUT' });
     if (res.ok) { setSnack({ open: true, msg: 'Request rejected', sev: 'warning' }); loadChangeRequests(); }
     else setSnack({ open: true, msg: 'Failed', sev: 'error' });
   };

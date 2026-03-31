@@ -1,4 +1,4 @@
-const BASE = "http://127.0.0.1:8001";
+const BASE = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
 
 export const fetchData = async (month) => {
   const res = await fetch(`${BASE}/data?month=${month || ""}`);

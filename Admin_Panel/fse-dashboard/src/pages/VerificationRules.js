@@ -15,7 +15,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon     from "@mui/icons-material/Cancel";
 import { BRAND }      from "../theme";
 
-const EMPLOYEE_API = "http://localhost:3000/api";
+const EMPLOYEE_API = process.env.REACT_APP_EMPLOYEE_API_URL || "http://localhost:4000/api";
 
 const OPERATORS = [
   { value: "equals",     label: "Equals (one or more values)" },
@@ -367,7 +367,7 @@ export default function VerificationRules({ token: propToken }) {
     setError("");
     try {
       const res = await fetch(`${EMPLOYEE_API}/verify/rules`);
-      if (!res.ok) throw new Error("Failed to load rules — is the employee server running on port 3000?");
+      if (!res.ok) throw new Error("Failed to load rules — is the employee server running on port 4000?");
       const data = await res.json();
       setRules(data);
     } catch (err) {
@@ -413,8 +413,8 @@ export default function VerificationRules({ token: propToken }) {
               🔑 Employee App Token Required
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              This page connects to the Employee App API (port 3000). Log in to the employee app at{" "}
-              <a href="http://localhost:3000" target="_blank" rel="noreferrer">localhost:3000</a>,
+              This page connects to the Employee App API (port 4000). Log in to the employee app at{" "}
+              <a href="http://localhost:4000" target="_blank" rel="noreferrer">localhost:4000</a>,
               then open browser DevTools → Application → Local Storage → copy the <code>token</code> value and paste it below.
             </Typography>
             <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
