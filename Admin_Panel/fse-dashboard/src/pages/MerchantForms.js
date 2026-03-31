@@ -4,16 +4,120 @@ import {
   Alert, Tooltip, Table, TableBody, TableCell, TableContainer,
   TableHead, TableRow, Avatar, Tabs, Tab, Badge, TextField,
   InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions,
-  IconButton, Collapse,
+  IconButton, Collapse, Menu, MenuItem, ListItemIcon, ListItemText,
 } from '@mui/material';
-import RefreshIcon       from '@mui/icons-material/Refresh';
-import SearchIcon        from '@mui/icons-material/Search';
-import WarningAmberIcon  from '@mui/icons-material/WarningAmber';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import ExpandMoreIcon    from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon    from '@mui/icons-material/ExpandLess';
-import CloseIcon         from '@mui/icons-material/Close';
-import { BRAND }         from '../theme';
+import RefreshIcon        from '@mui/icons-material/Refresh';
+import SearchIcon         from '@mui/icons-material/Search';
+import WarningAmberIcon   from '@mui/icons-material/WarningAmber';
+import NotificationsIcon  from '@mui/icons-material/Notifications';
+import ExpandMoreIcon     from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon     from '@mui/icons-material/ExpandLess';
+import CloseIcon          from '@mui/icons-material/Close';
+import DownloadIcon       from '@mui/icons-material/Download';
+import TableChartIcon     from '@mui/icons-material/TableChart';
+import GridOnIcon         from '@mui/icons-material/GridOn';
+import * as XLSX          from 'xlsx';
+import { BRAND }          from '../theme';
+
+// ── Flatten a form record into a flat row for export ─────────
+function flattenForm(f) {
+  return {
+    'Employee Name':     f.employeeName   || '',
+    'Customer Name':     f.customerName   || '',
+    'Customer Phone':    f.customerNumber || '',
+    'Location':          f.location       || '',
+    'Visit Status':      f.status         || '',
+    'Product':           f.formFillingFor || (f.attemptedProducts || []).join(', '),
+    'Tide QR Posted':    f.tide_qrPosted    || '',
+    'Tide UPI Txn Done': f.tide_upiTxnDone  || '',
+    'Kotak Txn Done':    f.kotak_txnDone    || '',
+    'Kotak WiFi/BT Off': f.kotak_wifiBtOff  || '',
+    'Insurance Vehicle No':   f.ins_vehicleNumber  || '',
+    'Insurance Vehicle Type': f.ins_vehicleType    || '',
+    'Insurance Type':         f.ins_insuranceType  || '',
+    'PineLab Card Txn':       f.pine_cardTxn       || '',
+    'PineLab WiFi Connected': f.pine_wifiConnected || '',
+    'Credit Card Name':       f.cc_cardName        || '',
+    'Tide Insurance Type':    f.tideIns_type        || '',
+    'BharatPay Product':      f.bp_product          || '',
+    'Submitted On':      f.createdAt ? new Date(f.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
+  };
+}
+
+// ── Export to Excel ───────────────────────────────────────────
+function exportToExcel(forms) {
+  const rows = forms.map(flattenForm);
+  const ws   = XLSX.utils.json_to_sheet(rows);
+
+  // Auto column widths
+  const colWidths = Object.keys(rows[0] || {}).map(key => ({
+    wch: Math.max(key.length, ...rows.map(r => String(r[key] || '').length), 10)
+  }));
+  ws['!cols'] = colWidths;
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Merchant Forms');
+  XLSX.writeFile(wb, `Merchant_Forms_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ── Export to Google Sheets ───────────────────────────────────
+async function exportToGoogleSheets(forms, setExporting, setError) {
+  setExporting(true);
+  try {
+    // Request Google OAuth token with Sheets scope
+    const tokenClient = window.google?.accounts?.oauth2?.initTokenClient({
+      client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID,
+      scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
+      callback: async (tokenResponse) => {
+        if (tokenResponse.error) { setError('Google auth failed: ' + tokenResponse.error); setExporting(false); return; }
+        const accessToken = tokenResponse.access_token;
+        const rows = forms.map(flattenForm);
+        const headers = Object.keys(rows[0] || {});
+        const values  = [headers, ...rows.map(r => headers.map(h => r[h] || ''))];
+
+        // Create new spreadsheet
+        const createRes = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            properties: { title: `Merchant Forms ${new Date().toLocaleDateString('en-IN')}` },
+            sheets: [{ properties: { title: 'Merchant Forms' } }]
+          })
+        });
+        const sheet = await createRes.json();
+        const sheetId = sheet.spreadsheetId;
+
+        // Write data
+        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1?valueInputOption=RAW`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ values })
+        });
+
+        // Bold header row + freeze
+        await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requests: [
+            { repeatCell: { range: { sheetId: 0, startRowIndex: 0, endRowIndex: 1 },
+              cell: { userEnteredFormat: { textFormat: { bold: true }, backgroundColor: { red: 0.1, green: 0.27, blue: 0.15 } } },
+              fields: 'userEnteredFormat(textFormat,backgroundColor)' }},
+            { updateSheetProperties: { properties: { sheetId: 0, gridProperties: { frozenRowCount: 1 } }, fields: 'gridProperties.frozenRowCount' }},
+            { autoResizeDimensions: { dimensions: { sheetId: 0, dimension: 'COLUMNS', startIndex: 0, endIndex: headers.length } }}
+          ]})
+        });
+
+        // Open the sheet in new tab
+        window.open(`https://docs.google.com/spreadsheets/d/${sheetId}`, '_blank');
+        setExporting(false);
+      }
+    });
+    tokenClient.requestAccessToken();
+  } catch (err) {
+    setError('Export failed: ' + err.message);
+    setExporting(false);
+  }
+}
 
 const EMP_API = process.env.REACT_APP_EMPLOYEE_API_URL || 'http://localhost:4000/api';
 
@@ -202,6 +306,8 @@ export default function MerchantForms() {
   const [error,      setError]      = useState('');
   const [search,     setSearch]     = useState('');
   const [dupOpen,    setDupOpen]    = useState(false);
+  const [exporting,  setExporting]  = useState(false);
+  const [exportAnchor, setExportAnchor] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -274,6 +380,31 @@ export default function MerchantForms() {
               </IconButton>
             </Badge>
           </Tooltip>
+
+          {/* Export Button */}
+          <Button
+            startIcon={exporting ? <CircularProgress size={14} sx={{ color: 'inherit' }} /> : <DownloadIcon />}
+            variant="contained"
+            disabled={exporting || forms.length === 0}
+            onClick={e => setExportAnchor(e.currentTarget)}
+            sx={{ bgcolor: BRAND.primary, fontWeight: 700, '&:hover': { bgcolor: '#0f3320' } }}
+          >
+            Export
+          </Button>
+          <Menu anchorEl={exportAnchor} open={Boolean(exportAnchor)} onClose={() => setExportAnchor(null)}
+            PaperProps={{ sx: { borderRadius: 2, mt: 0.5, minWidth: 200, boxShadow: '0 4px 20px rgba(0,0,0,0.12)' } }}>
+            <MenuItem onClick={() => { setExportAnchor(null); exportToExcel(forms); }}
+              sx={{ gap: 1.5, py: 1.5 }}>
+              <ListItemIcon><TableChartIcon sx={{ color: '#217346' }} /></ListItemIcon>
+              <ListItemText primary="Export to Excel" secondary=".xlsx file download" />
+            </MenuItem>
+            <MenuItem onClick={() => { setExportAnchor(null); exportToGoogleSheets(forms, setExporting, setError); }}
+              sx={{ gap: 1.5, py: 1.5 }}>
+              <ListItemIcon><GridOnIcon sx={{ color: '#0F9D58' }} /></ListItemIcon>
+              <ListItemText primary="Export to Google Sheets" secondary="Opens in new tab" />
+            </MenuItem>
+          </Menu>
+
           <Button startIcon={<RefreshIcon />} variant="outlined" onClick={load}
             sx={{ borderColor: BRAND.primary, color: BRAND.primary, fontWeight: 700 }}>
             Refresh
