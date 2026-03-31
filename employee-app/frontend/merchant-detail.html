@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vegavruddhi – Merchant Detail</title>
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .detail-page { max-width: 780px; margin: 0 auto; padding: 32px 24px; }
+
+    .detail-hero {
+      background: linear-gradient(135deg, var(--green-dark), var(--green-mid));
+      border-radius: 16px; padding: 28px 32px;
+      display: flex; align-items: center; gap: 20px;
+      margin-bottom: 24px; position: relative; overflow: hidden;
+    }
+    .detail-hero::after {
+      content:''; position:absolute; right:-50px; top:-50px;
+      width:200px; height:200px; border-radius:50%;
+      background:rgba(255,255,255,0.05);
+    }
+    .detail-hero-avatar {
+      width:72px; height:72px; border-radius:50%;
+      background:rgba(255,255,255,0.18);
+      border:2px solid rgba(255,255,255,0.35);
+      display:flex; align-items:center; justify-content:center;
+      font-size:28px; font-weight:800; color:#fff; flex-shrink:0;
+    }
+    .detail-hero-info h2 { font-size:22px; font-weight:700; color:#fff; margin-bottom:4px; }
+    .detail-hero-info p  { font-size:13px; color:rgba(255,255,255,0.75); }
+    .detail-hero-badges  { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .detail-badge {
+      padding:3px 12px; border-radius:20px; font-size:12px; font-weight:600;
+      background:rgba(255,255,255,0.15); color:#fff;
+      border:1px solid rgba(255,255,255,0.25);
+    }
+    .detail-back {
+      margin-left:auto; padding:9px 18px;
+      background:rgba(255,255,255,0.12); color:#fff;
+      border:1.5px solid rgba(255,255,255,0.3); border-radius:8px;
+      text-decoration:none; font-size:13px; font-weight:600;
+      white-space:nowrap; align-self:flex-start;
+      position:relative; z-index:10; transition:background 0.2s;
+    }
+    .detail-back:hover { background:rgba(255,255,255,0.22); }
+
+    /* Section card */
+    .detail-section {
+      background:#fff; border-radius:14px;
+      box-shadow:0 2px 16px rgba(26,71,49,0.08);
+      margin-bottom:18px; overflow:hidden;
+    }
+    .detail-section-header {
+      display:flex; align-items:center; gap:10px;
+      padding:14px 24px; border-bottom:1px solid #f0f5f0;
+      background:#fafcfa;
+    }
+    .dsh-icon {
+      width:32px; height:32px; border-radius:8px;
+      background:var(--green-pale);
+      display:flex; align-items:center; justify-content:center; font-size:15px;
+    }
+    .detail-section-header h3 {
+      font-size:13px; font-weight:700;
+      text-transform:uppercase; letter-spacing:1px; color:var(--green-dark);
+    }
+
+    .detail-field-grid {
+      display:grid; grid-template-columns:1fr 1fr; gap:0;
+    }
+    .detail-field {
+      padding:16px 24px;
+      border-bottom:1px solid #f4f7f4;
+      border-right:1px solid #f4f7f4;
+    }
+    .detail-field:nth-child(even) { border-right:none; }
+    .detail-field:last-child,
+    .detail-field:nth-last-child(2):nth-child(odd) { border-bottom:none; }
+    .detail-field.full { grid-column:1/-1; border-right:none; }
+
+    .df-label {
+      font-size:11px; font-weight:600; text-transform:uppercase;
+      letter-spacing:0.8px; color:var(--text-light); margin-bottom:5px;
+    }
+    .df-value { font-size:15px; font-weight:600; color:var(--text-dark); }
+
+    .status-pill-detail {
+      display:inline-block; padding:4px 14px; border-radius:20px;
+      font-size:12px; font-weight:700;
+    }
+    .yn-yes { color:#2e7d32; background:#e6f4ea; padding:3px 12px; border-radius:20px; font-size:12px; font-weight:700; }
+    .yn-no  { color:#c62828; background:#fdecea; padding:3px 12px; border-radius:20px; font-size:12px; font-weight:700; }
+
+    /* Edit / Delete action buttons */
+    .action-btns {
+      display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .btn-edit {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      cursor: pointer; border: 1.5px solid var(--green-dark);
+      background: var(--white); color: var(--green-dark);
+      transition: background 0.2s, transform 0.15s; font-family: var(--font);
+    }
+    .btn-edit:hover { background: var(--green-pale); transform: translateY(-1px); }
+
+    .btn-delete {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      cursor: pointer; border: 1.5px solid #c62828;
+      background: var(--white); color: #c62828;
+      transition: background 0.2s, transform 0.15s; font-family: var(--font);
+    }
+    .btn-delete:hover { background: #fdecea; transform: translateY(-1px); }
+
+    /* Edit modal overlay */
+    .edit-modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 500;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .edit-modal-overlay.open { display: flex; }
+    .edit-modal {
+      background: #fff; border-radius: 16px; width: 100%; max-width: 560px;
+      max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      animation: fadeInUp 0.3s ease both;
+    }
+    .edit-modal-header {
+      padding: 20px 24px 16px; border-bottom: 1px solid #f0f5f0;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; background: #fff; z-index: 10;
+    }
+    .edit-modal-header h3 { font-size: 17px; font-weight: 800; color: var(--green-dark); }
+    .edit-modal-close {
+      width: 32px; height: 32px; border-radius: 50%; border: none;
+      background: #f5f5f5; cursor: pointer; font-size: 18px; color: #666;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+    }
+    .edit-modal-close:hover { background: #fdecea; color: #c62828; }
+    .edit-modal-body { padding: 20px 24px; }
+    .edit-modal-footer {
+      padding: 16px 24px; border-top: 1px solid #f0f5f0;
+      display: flex; gap: 10px; justify-content: flex-end;
+      position: sticky; bottom: 0; background: #fff;
+    }
+    .edit-field { margin-bottom: 16px; }
+    .edit-field label {
+      display: block; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.6px;
+      color: var(--text-mid); margin-bottom: 6px;
+    }
+    .edit-field input, .edit-field select, .edit-field textarea {
+      width: 100%; padding: 10px 14px; border: 1.5px solid #dde8dd;
+      border-radius: 8px; font-size: 14px; font-family: var(--font);
+      color: var(--text-dark); background: #fafcfa; outline: none;
+      transition: border 0.2s;
+    }
+    .edit-field input:focus, .edit-field select:focus { border-color: var(--green-light); }
+    .edit-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .btn-save {
+      padding: 10px 24px; background: var(--green-dark); color: #fff;
+      border: none; border-radius: 8px; font-size: 14px; font-weight: 700;
+      cursor: pointer; font-family: var(--font); transition: background 0.2s;
+    }
+    .btn-save:hover { background: var(--green-mid); }
+    .btn-save:disabled { background: #aaa; cursor: not-allowed; }
+    .btn-cancel-modal {
+      padding: 10px 20px; background: #f5f5f5; color: var(--text-dark);
+      border: none; border-radius: 8px; font-size: 14px; font-weight: 600;
+      cursor: pointer; font-family: var(--font); transition: background 0.2s;
+    }
+    .btn-cancel-modal:hover { background: #e8e8e8; }
+
+    .edit-conditional { display: none; }
+    .edit-conditional.visible { display: block; }
+
+    @media(max-width:600px){
+      .detail-field-grid { grid-template-columns:1fr; }
+      .detail-field { border-right:none; }
+      .detail-hero { flex-direction:column; }
+      .detail-back { margin-left:0; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-logo"><a href="dashboard.html"><img src="logo-full.png" alt="Vegavruddhi Pvt. Ltd."/></a></div>
+    <div class="nav-right">
+      <div class="nav-profile" id="profileToggle">
+        <div class="nav-avatar"   id="navAvatar">?</div>
+        <div class="nav-info">
+          <div class="name"         id="navName">Loading...</div>
+          <div class="status-badge" id="navStatus">Active</div>
+        </div>
+        <span class="nav-chevron">▾</span>
+        <div class="dropdown-menu" id="dropdownMenu">
+          <div class="dropdown-header">
+            <div class="dh-name"  id="ddName">–</div>
+            <div class="dh-email" id="ddEmail">–</div>
+          </div>
+          <a href="dashboard.html" onclick="event.stopPropagation()">&#127968;&nbsp; Dashboard</a>
+          <a href="profile.html"   onclick="event.stopPropagation()">&#128100;&nbsp; My Profile</a>
+          <a href="#" class="logout" id="logoutBtn" onclick="event.stopPropagation()">&#128682;&nbsp; Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="detail-page" id="detailPage">
+    <div class="merchants-loading">Loading merchant details...</div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="edit-modal-overlay" id="editModalOverlay">
+    <div class="edit-modal">
+      <div class="edit-modal-header">
+        <h3>&#9998; Edit Merchant</h3>
+        <button class="edit-modal-close" onclick="closeEditModal()">&#10005;</button>
+      </div>
+      <div class="edit-modal-body">
+        <div class="edit-row">
+          <div class="edit-field">
+            <label>Customer Name <span class="req">*</span></label>
+            <input type="text" id="edit_customerName" required />
+          </div>
+          <div class="edit-field">
+            <label>Customer Number <span class="req">*</span></label>
+            <input type="tel" id="edit_customerNumber" required />
+          </div>
+        </div>
+        <div class="edit-field">
+          <label>Location <span class="req">*</span></label>
+          <input type="text" id="edit_location" required />
+        </div>
+        <div class="edit-field">
+          <label>Visit Status <span class="req">*</span></label>
+          <select id="edit_status" onchange="handleEditStatusChange(this.value)">
+            <option value="Ready for Onboarding">Ready for Onboarding</option>
+            <option value="Not Interested">Not Interested</option>
+            <option value="Try but not done due to error">Try but not done due to error</option>
+            <option value="Need to visit again">Need to visit again</option>
+          </select>
+        </div>
+
+        <!-- ── READY FOR ONBOARDING: full product + sub-fields ── -->
+        <div id="edit_onboarding_section" class="edit-conditional">
+        <div class="edit-field">
+          <label>Form Filled For</label>
+          <select id="edit_formFillingFor" onchange="showEditConditional(this.value)">
+            <option value="">-- None --</option>
+            <option value="Tide">Tide</option>
+            <option value="Kotak 811">Kotak 811</option>
+            <option value="Insurance">Insurance</option>
+            <option value="PineLab">PineLab</option>
+            <option value="Credit Card">Credit Card</option>
+            <option value="Tide Insurance">Tide Insurance</option>
+            <option value="MSME">MSME</option>
+            <option value="Airtel Payments Bank">Airtel Payments Bank</option>
+            <option value="Equitas SF Bank">Equitas SF Bank</option>
+            <option value="IndusInd Bank">IndusInd Bank</option>
+            <option value="Bharat Pay">Bharat Pay</option>
+            <option value="Tide Credit Card">Tide Credit Card</option>
+          </select>
+        </div>
+
+        <!-- ── TIDE ── -->
+        <div class="edit-conditional" id="econd_Tide">
+          <div class="edit-row">
+            <div class="edit-field">
+              <label>QR Posted</label>
+              <select id="edit_tide_qrPosted">
+                <option value="">Select</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div class="edit-field">
+              <label>Rs 10/30 UPI Txn Done</label>
+              <select id="edit_tide_upiTxnDone">
+                <option value="">Select</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── KOTAK 811 ── -->
+        <div class="edit-conditional" id="econd_Kotak 811">
+          <div class="edit-row">
+            <div class="edit-field">
+              <label>Rs 2000 Txn Done</label>
+              <select id="edit_kotak_txnDone">
+                <option value="">Select</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div class="edit-field">
+              <label>Wi-Fi &amp; Bluetooth Off</label>
+              <select id="edit_kotak_wifiBtOff">
+                <option value="">Select</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── INSURANCE ── -->
+        <div class="edit-conditional" id="econd_Insurance">
+          <div class="edit-field">
+            <label>Vehicle Number</label>
+            <input type="text" id="edit_ins_vehicleNumber" placeholder="e.g. MH12AB1234" />
+          </div>
+          <div class="edit-row">
+            <div class="edit-field">
+              <label>Vehicle Type</label>
+              <select id="edit_ins_vehicleType">
+                <option value="">Select</option>
+                <option value="2 Wheeler">2 Wheeler</option>
+                <option value="4 Wheeler">4 Wheeler</option>
+                <option value="Commercial">Commercial</option>
+              </select>
+            </div>
+            <div class="edit-field">
+              <label>Insurance Type</label>
+              <select id="edit_ins_insuranceType">
+                <option value="">Select</option>
+                <option value="3rd Party">3rd Party</option>
+                <option value="Only OD">Only OD</option>
+                <option value="OD + 3rd Party">OD + 3rd Party</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── PINELAB ── -->
+        <div class="edit-conditional" id="econd_PineLab">
+          <div class="edit-row">
+            <div class="edit-field">
+              <label>Card Txn of Rs 100 Done</label>
+              <select id="edit_pine_cardTxn">
+                <option value="">Select</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+            <div class="edit-field">
+              <label>Machine connected with Wi-Fi</label>
+              <select id="edit_pine_wifiConnected">
+                <option value="">Select</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── CREDIT CARD ── -->
+        <div class="edit-conditional" id="econd_Credit Card">
+          <div class="edit-field">
+            <label>Name of the Credit Card</label>
+            <input type="text" id="edit_cc_cardName" placeholder="e.g. HDFC Regalia" />
+          </div>
+        </div>
+
+        <!-- ── TIDE INSURANCE ── -->
+        <div class="edit-conditional" id="econd_Tide Insurance">
+          <div class="edit-field">
+            <label>Type of Insurance</label>
+            <select id="edit_tideIns_type">
+              <option value="">Select</option>
+              <option value="Cyber Security">Cyber Security</option>
+              <option value="Accidental">Accidental</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ── BHARAT PAY ── -->
+        <div class="edit-conditional" id="econd_Bharat Pay">
+          <div class="edit-field">
+            <label>Product</label>
+            <select id="edit_bp_product">
+              <option value="">Select</option>
+              <option value="New Onboarding">New Onboarding</option>
+              <option value="QR Re-linking">QR Re-linking</option>
+              <option value="Re-visit">Re-visit</option>
+              <option value="Loan">Loan</option>
+              <option value="Sound Box">Sound Box</option>
+              <option value="Swipe">Swipe</option>
+              <option value="Mid Market Onboarding">Mid Market Onboarding</option>
+            </select>
+          </div>
+        </div>
+        </div><!-- end edit_onboarding_section -->
+
+        <!-- ── NOT ONBOARDING: checkbox products ── -->
+        <div id="edit_not_onboarding_section" class="edit-conditional">
+          <div class="edit-field">
+            <label>Products Discussed</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">
+              <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid #dde8dd;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.2s;">
+                <input type="checkbox" name="edit_attempted" value="Tide"        style="accent-color:var(--green-dark);width:15px;height:15px;" /> Tide
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid #dde8dd;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.2s;">
+                <input type="checkbox" name="edit_attempted" value="Kotak"       style="accent-color:var(--green-dark);width:15px;height:15px;" /> Kotak
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid #dde8dd;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.2s;">
+                <input type="checkbox" name="edit_attempted" value="Insurance"   style="accent-color:var(--green-dark);width:15px;height:15px;" /> Insurance
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid #dde8dd;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.2s;">
+                <input type="checkbox" name="edit_attempted" value="Pinelab"     style="accent-color:var(--green-dark);width:15px;height:15px;" /> Pinelab
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid #dde8dd;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.2s;">
+                <input type="checkbox" name="edit_attempted" value="Credit Card" style="accent-color:var(--green-dark);width:15px;height:15px;" /> Credit Card
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1.5px solid #dde8dd;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;transition:all 0.2s;">
+                <input type="checkbox" name="edit_attempted" value="BharatPe"    style="accent-color:var(--green-dark);width:15px;height:15px;" /> BharatPe
+              </label>
+            </div>
+          </div>
+        </div>
+        <div id="edit_errorMsg" class="error-msg"></div>
+        <div id="edit_successMsg" class="success-msg"></div>
+      </div>
+      <div class="edit-modal-footer">
+  <!-- Merchant Request Modal (Edit or Delete) -->
+  <div class="edit-modal-overlay" id="editModalOverlay">
+    <div class="edit-modal" style="max-width:480px;">
+      <div class="edit-modal-header">
+        <h3 id="reqModalTitle">&#128276; Request Change</h3>
+        <button class="edit-modal-close" onclick="closeEditModal()">&#10005;</button>
+      </div>
+      <div class="edit-modal-body">
+        <div style="background:#e3f2fd;border:1px solid #90caf9;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#1565c0;font-family:var(--font);">
+          &#8505; Your request will be sent to admin for review. Changes will be applied after approval.
+        </div>
+        <div id="reqEditFields">
+          <!-- Edit fields shown only for edit request -->
+          <div class="edit-field">
+            <label>Customer Name</label>
+            <input type="text" id="req_customerName" />
+          </div>
+          <div class="edit-row">
+            <div class="edit-field">
+              <label>Customer Number</label>
+              <input type="tel" id="req_customerNumber" />
+            </div>
+            <div class="edit-field">
+              <label>Location</label>
+              <input type="text" id="req_location" />
+            </div>
+          </div>
+          <div class="edit-field">
+            <label>Visit Status</label>
+            <select id="req_status">
+              <option value="Ready for Onboarding">Ready for Onboarding</option>
+              <option value="Not Interested">Not Interested</option>
+              <option value="Try but not done due to error">Try but not done due to error</option>
+              <option value="Need to visit again">Need to visit again</option>
+            </select>
+          </div>
+        </div>
+        <div class="edit-field">
+          <label>Reason for request <span class="req">*</span></label>
+          <textarea id="req_reason" rows="3" placeholder="Why do you want this change?" style="width:100%;padding:10px 14px;border:1.5px solid #dde8dd;border-radius:8px;font-size:14px;font-family:var(--font);outline:none;resize:vertical;"></textarea>
+        </div>
+        <div id="req_errorMsg"   class="error-msg"></div>
+        <div id="req_successMsg" class="success-msg"></div>
+      </div>
+      <div class="edit-modal-footer">
+        <button class="btn-cancel-modal" onclick="closeEditModal()">Cancel</button>
+        <button class="btn-save" id="reqSendBtn" onclick="sendMerchantRequest()">&#128276; Send Request</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'index.html';
+
+    document.getElementById('profileToggle').addEventListener('click', (e) => {
+      if (e.target.closest('a')) return;
+      document.getElementById('dropdownMenu').classList.toggle('open');
+    });
+    document.addEventListener('click', (e) => {
+      if (!document.getElementById('profileToggle').contains(e.target))
+        document.getElementById('dropdownMenu').classList.remove('open');
+    });
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+      e.preventDefault(); localStorage.clear(); window.location.href = 'index.html';
+    });
+
+    // Load nav
+    fetch('/api/auth/profile', { headers: { 'Authorization': 'Bearer ' + token } })
+      .then(r => r.json()).then(emp => {
+        const i = emp.newJoinerName.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+        document.getElementById('navAvatar').textContent = i;
+        document.getElementById('navName').textContent   = emp.newJoinerName;
+        document.getElementById('navStatus').textContent = emp.status;
+        document.getElementById('ddName').textContent    = emp.newJoinerName;
+        document.getElementById('ddEmail').textContent   = emp.email;
+      });
+
+    const statusColor = {
+      'Ready for Onboarding':          { color:'#2e7d32', bg:'#e6f4ea' },
+      'Not Interested':                { color:'#c62828', bg:'#fdecea' },
+      'Try but not done due to error': { color:'#e65100', bg:'#fff3e0' },
+      'Need to visit again':           { color:'#1565c0', bg:'#e3f2fd' }
+    };
+
+    function yn(val) {
+      if (!val) return '<span style="color:#aaa">–</span>';
+      return val === 'Yes'
+        ? '<span class="yn-yes">✓ Yes</span>'
+        : '<span class="yn-no">✗ No</span>';
+    }
+
+    function field(label, value) {
+      return `<div class="detail-field">
+        <div class="df-label">${label}</div>
+        <div class="df-value">${value || '<span style="color:#aaa">–</span>'}</div>
+      </div>`;
+    }
+
+    function fieldFull(label, value) {
+      return `<div class="detail-field full">
+        <div class="df-label">${label}</div>
+        <div class="df-value">${value || '<span style="color:#aaa">–</span>'}</div>
+      </div>`;
+    }
+
+    function section(icon, title, fields) {
+      return `<div class="detail-section">
+        <div class="detail-section-header">
+          <div class="dsh-icon">${icon}</div>
+          <h3>${title}</h3>
+        </div>
+        <div class="detail-field-grid">${fields}</div>
+      </div>`;
+    }
+
+    function productFields(f) {
+      switch(f.formFillingFor) {
+        case 'Tide':
+          return section('🌊','Tide Details',
+            field('QR Posted', yn(f.tide_qrPosted)) +
+            field('Rs 10/30 UPI Txn Done', yn(f.tide_upiTxnDone))
+          );
+        case 'Kotak 811':
+          return section('🏦','Kotak 811 Details',
+            field('Rs 2000 Txn Done', yn(f.kotak_txnDone)) +
+            field('Wi-Fi & Bluetooth Off at Onboarding', yn(f.kotak_wifiBtOff))
+          );
+        case 'Insurance':
+          return section('🛡️','Insurance Details',
+            field('Vehicle Number', f.ins_vehicleNumber) +
+            field('Vehicle Type', f.ins_vehicleType) +
+            fieldFull('Insurance Type', f.ins_insuranceType)
+          );
+        case 'PineLab':
+          return section('💳','PineLab Details',
+            field('Card Txn of Rs 100 Done', yn(f.pine_cardTxn)) +
+            field('Machine Connected with Wi-Fi', yn(f.pine_wifiConnected))
+          );
+        case 'Credit Card':
+          return section('💳','Credit Card Details',
+            fieldFull('Name of Credit Card', f.cc_cardName)
+          );
+        case 'Tide Insurance':
+          return section('🛡️','Tide Insurance Details',
+            fieldFull('Type of Insurance', f.tideIns_type)
+          );
+        case 'Bharat Pay':
+          return section('📲','Bharat Pay Details',
+            fieldFull('Product', f.bp_product)
+          );
+        default:
+          return '';
+      }
+    }
+
+    let currentForm = null; // store loaded form globally
+
+    async function loadDetail() {
+      const id = new URLSearchParams(window.location.search).get('id');
+      if (!id) { window.location.href = 'dashboard.html'; return; }
+
+      try {
+        const res = await fetch('/api/forms/detail/' + id, { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!res.ok) { window.location.href = 'dashboard.html'; return; }
+        const f   = await res.json();
+        currentForm = f;
+        renderDetail(f);
+      } catch (err) {
+        console.error(err);
+        document.getElementById('detailPage').innerHTML = '<p style="color:red;padding:20px">Failed to load details.</p>';
+      }
+    }
+
+    async function renderDetail(f) {
+      // Fetch verification + phone cross-check in parallel — pass name and product for accurate matching
+      const vRes = await fetch(`/api/verify/check?phone=${encodeURIComponent(f.customerNumber)}&name=${encodeURIComponent(f.customerName)}&product=${encodeURIComponent(f.formFillingFor || '')}`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const vData = vRes.ok ? await vRes.json() : null;
+
+      const sc   = statusColor[f.status] || { color:'#333', bg:'#f5f5f5' };
+      const date = new Date(f.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+      const time = new Date(f.createdAt).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+
+      // Build verification section
+      let verifySection = '';
+      if (vData) {
+        const v  = vData.verification || {};
+        const pc = vData.phoneCheck   || {};
+        const vBadgeMap = {
+          'Fully Verified': { bg:'#e6f4ea', color:'#2e7d32', icon:'✓' },
+          'Partially Done': { bg:'#fff8e1', color:'#f57f17', icon:'◑' },
+          'Not Verified':   { bg:'#fdecea', color:'#c62828', icon:'✗' },
+          'Not Found':      { bg:'#f5f5f5', color:'#888',    icon:'–' }
+        };
+        const vb = vBadgeMap[v.status] || vBadgeMap['Not Found'];
+
+        // Match type label
+        const matchLabels = {
+          'exact':       { text: '📞 Exact Phone Match',        color: '#2e7d32', bg: '#e6f4ea' },
+          'fuzzy_phone': { text: '📞 Fuzzy Phone Match (±1 digit)', color: '#e65100', bg: '#fff3e0' },
+          'name':        { text: '👤 Matched by Name (Approximate)', color: '#1565c0', bg: '#e3f2fd' },
+        };
+        const ml = v.matchType ? matchLabels[v.matchType] : null;
+
+        let phoneMatchRow = '';
+        if (pc.matched) {
+          const matchColor = pc.phoneMatch ? '#2e7d32' : '#c62828';
+          const matchBg    = pc.phoneMatch ? '#e6f4ea' : '#fdecea';
+          const matchIcon  = pc.phoneMatch ? '✓ Number Matched' : '⚠ Number Mismatch';
+          phoneMatchRow = `
+            <div class="detail-field full" style="background:#fffdf0;border-left:3px solid ${matchColor};">
+              <div class="df-label">Phone Cross-Check (vs Google Sheet)</div>
+              <div class="df-value" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                <span style="background:${matchBg};color:${matchColor};padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700;">${matchIcon}</span>
+                <span style="font-size:13px;color:#555;">Form: <b>${pc.formPhone}</b></span>
+                <span style="font-size:13px;color:#555;">Sheet: <b>${pc.sheetPhone || '–'}</b></span>
+                <span style="font-size:13px;color:#888;">Sheet Name: ${pc.sheetName || '–'}</span>
+                <span style="font-size:11px;color:#aaa;">(${pc.collection || ''})</span>
+              </div>
+            </div>`;
+        } else {
+          phoneMatchRow = `
+            <div class="detail-field full" style="background:#f9f9f9;">
+              <div class="df-label">Phone Cross-Check (vs Google Sheet)</div>
+              <div class="df-value"><span style="background:#f5f5f5;color:#888;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700;">– Number not found in sheet</span></div>
+            </div>`;
+        }
+
+        const condRows = (v.checks || []).map(c => `
+          <div class="detail-field">
+            <div class="df-label">${c.label}</div>
+            <div class="df-value" style="display:flex;align-items:center;gap:10px;">
+              <span style="
+                display:inline-flex;align-items:center;gap:5px;
+                background:${c.pass?'#e6f4ea':'#fdecea'};
+                color:${c.pass?'#2e7d32':'#c62828'};
+                padding:5px 14px;border-radius:20px;font-size:13px;font-weight:700;
+                border:1.5px solid ${c.pass?'#a8d5b5':'#f5a5a5'};
+              ">
+                ${c.pass
+                  ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Done'
+                  : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Not Done'
+                }
+              </span>
+              <span style="font-size:12px;color:#888;">Actual: <b>${c.actual}</b></span>
+            </div>
+          </div>`).join('');
+
+        // Summary bar — show all condition names in one row
+        const summaryBar = (v.checks || []).length > 0 ? `
+          <div class="detail-field full" style="background:#f8fdf9;border-bottom:1px solid #f0f5f0;">
+            <div class="df-label" style="margin-bottom:10px;">Condition Summary — ${v.monthLabel || ''}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+              ${(v.checks || []).map(c => `
+                <span style="
+                  display:inline-flex;align-items:center;gap:5px;
+                  padding:5px 14px;border-radius:20px;font-size:12px;font-weight:700;
+                  background:${c.pass?'#e6f4ea':'#fdecea'};
+                  color:${c.pass?'#2e7d32':'#c62828'};
+                  border:1.5px solid ${c.pass?'#a8d5b5':'#f5a5a5'};
+                ">
+                  ${c.pass
+                    ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>'
+                    : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+                  }
+                  ${c.label}
+                </span>`).join('')}
+            </div>
+          </div>` : '';
+
+        verifySection = `
+          <div class="detail-section">
+            <div class="detail-section-header">
+              <div class="dsh-icon">🔍</div>
+              <h3>Verification Status
+                <span style="margin-left:10px;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;background:${vb.bg};color:${vb.color};border:1.5px solid ${vb.color}20;">${vb.icon} ${v.status || 'Not Found'}</span>
+                ${v.monthLabel ? `<span style="font-size:11px;color:#aaa;margin-left:8px;">${v.monthLabel}</span>` : ''}
+                ${ml ? `<span style="margin-left:8px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:${ml.bg};color:${ml.color};">${ml.text}</span>` : ''}
+              </h3>
+            </div>
+            <div class="detail-field-grid">
+              ${phoneMatchRow}
+              ${v.matchType === 'name' ? `
+                <div class="detail-field full" style="background:#fff8e1;border-left:3px solid #f57f17;">
+                  <div class="df-label">⚠ Approximate Match Warning</div>
+                  <div class="df-value" style="font-size:13px;color:#e65100;">
+                    Phone number did not match. Verification is based on <b>name match</b> with sheet record "<b>${v.sheetName}</b>" (${v.sheetPhone}).
+                    Please verify the phone number is correct.
+                  </div>
+                </div>` : ''}
+              ${v.matchType === 'fuzzy_phone' ? `
+                <div class="detail-field full" style="background:#fff3e0;border-left:3px solid #e65100;">
+                  <div class="df-label">⚠ Fuzzy Phone Match</div>
+                  <div class="df-value" style="font-size:13px;color:#e65100;">
+                    Exact phone did not match. Matched using last 8 digits with sheet record "<b>${v.sheetName}</b>" (${v.sheetPhone}).
+                    Please verify the phone number is correct.
+                  </div>
+                </div>` : ''}
+              ${summaryBar}
+              ${condRows || '<div class="detail-field full"><div class="df-value" style="color:#aaa;font-style:italic;">Number not found in sheet — no conditions evaluated</div></div>'}
+            </div>
+          </div>`;
+      }
+
+      document.getElementById('detailPage').innerHTML = `
+        <!-- Action buttons — request based -->
+        <div class="action-btns">
+          <button class="btn-edit" onclick="openMerchantEditRequest()">&#128276; Request Edit</button>
+          <button class="btn-delete" onclick="openMerchantDeleteRequest()">&#128276; Request Delete</button>
+        </div>
+
+        <div class="detail-hero">
+          <div class="detail-hero-avatar">${f.customerName.charAt(0).toUpperCase()}</div>
+          <div class="detail-hero-info">
+            <h2>${f.customerName}</h2>
+            <p>📞 ${f.customerNumber} &nbsp;·&nbsp; 📍 ${f.location}</p>
+            <div class="detail-hero-badges">
+              <span class="detail-badge">📄 ${f.formFillingFor || (f.attemptedProducts?.join(', ') || '–')}</span>
+              <span class="detail-badge" style="background:${sc.bg};color:${sc.color};border-color:${sc.bg}">${f.status}</span>
+            </div>
+          </div>
+          <a href="dashboard.html" class="detail-back" onclick="event.stopPropagation()">← Dashboard</a>
+        </div>
+
+        ${section('👤','Customer Information',
+          field('Customer Name', f.customerName) +
+          field('Customer Number', f.customerNumber) +
+          field('Location', f.location) +
+          field('Submitted On', date + ' at ' + time)
+        )}
+
+        ${section('📋','Visit Information',
+          field('Form Filled For', f.formFillingFor || (f.attemptedProducts?.join(', ') || '–')) +
+          fieldFull('Visit Status',
+            `<span class="status-pill-detail" style="color:${sc.color};background:${sc.bg}">${f.status}</span>`
+          )
+        )}
+
+        ${productFields(f)}
+        ${verifySection}
+      `;
+    }
+
+    // ── MERCHANT CHANGE REQUESTS ──────────────────────────────
+    let _requestType = 'edit'; // 'edit' or 'delete'
+
+    function openMerchantEditRequest() {
+      if (!currentForm) return;
+      _requestType = 'edit';
+      document.getElementById('reqModalTitle').textContent = '🔔 Request Merchant Edit';
+      document.getElementById('reqEditFields').style.display = 'block';
+      document.getElementById('req_customerName').value   = currentForm.customerName   || '';
+      document.getElementById('req_customerNumber').value = currentForm.customerNumber || '';
+      document.getElementById('req_location').value       = currentForm.location       || '';
+      document.getElementById('req_status').value         = currentForm.status         || '';
+      document.getElementById('req_reason').value         = '';
+      document.getElementById('req_errorMsg').style.display   = 'none';
+      document.getElementById('req_successMsg').style.display = 'none';
+      document.getElementById('editModalOverlay').classList.add('open');
+    }
+
+    function openMerchantDeleteRequest() {
+      if (!currentForm) return;
+      const reason = prompt(`Reason for deleting "${currentForm.customerName}"? (required)`);
+      if (!reason || !reason.trim()) return;
+
+      fetch('/api/requests/merchant-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({
+          merchantId:   currentForm._id,
+          merchantName: currentForm.customerName,
+          reason:       reason.trim()
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+        alert('✓ Delete request sent to admin for approval.');
+      })
+      .catch(() => alert('Server error. Please try again.'));
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModalOverlay').classList.remove('open');
+    }
+
+    async function sendMerchantRequest() {
+      const sendBtn    = document.getElementById('reqSendBtn');
+      const errorMsg   = document.getElementById('req_errorMsg');
+      const successMsg = document.getElementById('req_successMsg');
+      errorMsg.style.display = successMsg.style.display = 'none';
+
+      const reason = document.getElementById('req_reason').value.trim();
+      if (!reason) { errorMsg.textContent = 'Please provide a reason.'; errorMsg.style.display = 'block'; return; }
+
+      sendBtn.textContent = 'Sending...'; sendBtn.disabled = true;
+
+      try {
+        const body = {
+          merchantId:   currentForm._id,
+          merchantName: currentForm.customerName,
+          reason,
+          changes: {
+            customerName:   document.getElementById('req_customerName').value.trim(),
+            customerNumber: document.getElementById('req_customerNumber').value.trim(),
+            location:       document.getElementById('req_location').value.trim(),
+            status:         document.getElementById('req_status').value,
+          }
+        };
+
+        const res  = await fetch('/api/requests/merchant-edit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) { errorMsg.textContent = data.message || 'Failed'; errorMsg.style.display = 'block'; return; }
+
+        successMsg.textContent = '✓ Edit request sent! Admin will review and apply the change.';
+        successMsg.style.display = 'block';
+        setTimeout(closeEditModal, 2000);
+      } catch {
+        errorMsg.textContent = 'Server error. Please try again.';
+        errorMsg.style.display = 'block';
+      } finally {
+        sendBtn.textContent = '🔔 Send Request'; sendBtn.disabled = false;
+      }
+    }
+
+    document.getElementById('editModalOverlay').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('editModalOverlay')) closeEditModal();
+    });
+
+    loadDetail();
+  </script>
+
+  <footer class="footer">
+    <div class="footer-track">
+      <div class="footer-item"><img src="logo-full.png" alt="" class="footer-logo"/><span class="footer-text">Vegavruddhi Pvt. Ltd.</span><span class="footer-dot">·</span><span class="footer-tagline">IT &amp; Business Consultation Services</span></div>
+      <div class="footer-item"><img src="logo-full.png" alt="" class="footer-logo"/><span class="footer-text">Vegavruddhi Pvt. Ltd.</span><span class="footer-dot">·</span><span class="footer-tagline">IT &amp; Business Consultation Services</span></div>
+      <div class="footer-item"><img src="logo-full.png" alt="" class="footer-logo"/><span class="footer-text">Vegavruddhi Pvt. Ltd.</span><span class="footer-dot">·</span><span class="footer-tagline">IT &amp; Business Consultation Services</span></div>
+      <div class="footer-item"><img src="logo-full.png" alt="" class="footer-logo"/><span class="footer-text">Vegavruddhi Pvt. Ltd.</span><span class="footer-dot">·</span><span class="footer-tagline">IT &amp; Business Consultation Services</span></div>
+      <div class="footer-item"><img src="logo-full.png" alt="" class="footer-logo"/><span class="footer-text">Vegavruddhi Pvt. Ltd.</span><span class="footer-dot">·</span><span class="footer-tagline">IT &amp; Business Consultation Services</span></div>
+      <div class="footer-item"><img src="logo-full.png" alt="" class="footer-logo"/><span class="footer-text">Vegavruddhi Pvt. Ltd.</span><span class="footer-dot">·</span><span class="footer-tagline">IT &amp; Business Consultation Services</span></div>
+    </div>
+  </footer>
+
+</body>
+</html>

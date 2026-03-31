@@ -1,0 +1,15 @@
+{
+  "short_name": "FSE Dashboard",
+  "name": "FSE Dashboard — Vegavruddhi",
+  "icons": [
+    {
+      "src": "logo-full.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1a5c38",
+  "background_color": "#f0f7f3"
+}

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vegavruddhi – New Joiner Registration</title>
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-card" style="max-width:520px;">
+
+      <div class="auth-logo">
+        <img src="logo-full.png" alt="Vegavruddhi Pvt. Ltd." />
+        <span class="tagline">IT &amp; Business Consultation Services</span>
+      </div>
+      <hr class="auth-divider" />
+
+      <h2>New Joiner Registration</h2>
+      <p class="subtitle">VV – New Joining Candidate Details</p>
+
+      <div class="error-msg"   id="errorMsg"></div>
+      <div class="success-msg" id="successMsg"></div>
+
+      <form id="registerForm" enctype="multipart/form-data">
+
+        <div class="form-group">
+          <label for="email">Email Address <span class="req">*</span></label>
+          <input type="email" id="email" placeholder="your@email.com" required />
+        </div>
+
+        <!-- Profile Photo -->
+        <div class="form-group">
+          <label>Profile Photo <span class="req">*</span></label>
+          <div class="photo-upload-box" id="photoBox">
+            <div class="photo-preview-wrap">
+              <div class="photo-preview" id="photoPreview">&#128100;</div>
+            </div>
+            <div class="photo-actions">
+              <button type="button" class="photo-btn" id="openCameraBtn">&#128247; Take Photo</button>
+              <label for="photoGallery" class="photo-btn">&#128444; Choose from Gallery
+                <input type="file" id="photoGallery" accept="image/*" />
+              </label>
+            </div>
+            <div class="file-name" id="photoName">No photo selected</div>
+          </div>
+        </div>
+
+        <!-- Camera Modal -->
+        <div id="cameraModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+          <video id="cameraVideo" autoplay playsinline style="width:100%;max-width:420px;border-radius:12px;"></video>
+          <div style="display:flex;gap:12px;">
+            <button type="button" id="captureBtn" style="padding:12px 28px;background:#1a4731;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;">&#128247; Capture</button>
+            <button type="button" id="closeCameraBtn" style="padding:12px 28px;background:#555;color:#fff;border:none;border-radius:8px;font-size:15px;cursor:pointer;">Cancel</button>
+          </div>
+          <canvas id="cameraCanvas" style="display:none;"></canvas>
+        </div>
+
+        <div class="form-group">
+          <label>Upload CV <span class="req">*</span></label>
+          <div class="file-upload-box">
+            <input type="file" id="cv" accept=".pdf,.doc,.docx" required />
+            <label for="cv" class="file-label">&#128196; Add File <small style="font-weight:400;color:#888;">(PDF/DOC · Max 10 MB)</small></label>
+            <div class="file-name" id="fileName">No file chosen</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="newJoinerName">New Joiner Name <span class="req">*</span></label>
+            <input type="text" id="newJoinerName" placeholder="Full name" required />
+          </div>
+          <div class="form-group">
+            <label for="location">Location <span class="req">*</span></label>
+            <input type="text" id="location" placeholder="City / Office" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="newJoinerPhone">Phone Number <span class="req">*</span></label>
+            <input type="tel" id="newJoinerPhone" placeholder="+91 XXXXX XXXXX" required />
+          </div>
+          <div class="form-group">
+            <label for="newJoinerEmailId">Joiner Email ID <span class="req">*</span></label>
+            <input type="email" id="newJoinerEmailId" placeholder="joiner@email.com" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="reportingManager">Reporting Manager <span class="req">*</span></label>
+            <input type="text" id="reportingManager" placeholder="Manager name" required />
+          </div>
+          <div class="form-group">
+            <label for="position">For Position <span class="req">*</span></label>
+            <select id="position" required>
+              <option value="">Choose...</option>
+              <option>Team Lead</option>
+              <option>FSE</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="password">Create Password <span class="req">*</span></label>
+            <input type="password" id="password" placeholder="Min 6 characters" required minlength="6" />
+          </div>
+          <div class="form-group">
+            <label for="confirmPassword">Confirm Password <span class="req">*</span></label>
+            <input type="password" id="confirmPassword" placeholder="Repeat password" required />
+          </div>
+        </div>
+
+        <button type="submit" class="btn" id="submitBtn">Submit Registration</button>
+      </form>
+
+      <div class="auth-link">
+        Already registered? <a href="index.html">Sign in here</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('cv').addEventListener('change', function () {
+      document.getElementById('fileName').textContent = this.files[0] ? this.files[0].name : 'No file chosen';
+    });
+
+    // Gallery picker
+    document.getElementById('photoGallery').addEventListener('change', function () {
+      if (!this.files[0]) return;
+      setPhoto(this.files[0]);
+    });
+
+    // Set photo preview + store file
+    function setPhoto(file) {
+      window._selectedPhoto = file;
+      document.getElementById('photoName').textContent = file.name || 'Photo captured';
+      const reader = new FileReader();
+      reader.onload = e => {
+        const prev = document.getElementById('photoPreview');
+        prev.style.backgroundImage    = `url(${e.target.result})`;
+        prev.style.backgroundSize     = 'cover';
+        prev.style.backgroundPosition = 'center';
+        prev.textContent = '';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // Camera modal logic
+    let stream = null;
+    const modal      = document.getElementById('cameraModal');
+    const video      = document.getElementById('cameraVideo');
+    const canvas     = document.getElementById('cameraCanvas');
+    const captureBtn = document.getElementById('captureBtn');
+    const closeBtn   = document.getElementById('closeCameraBtn');
+
+    document.getElementById('openCameraBtn').addEventListener('click', async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+        video.srcObject = stream;
+        modal.style.display = 'flex';
+      } catch (err) {
+        alert('Could not access camera: ' + err.message + '\nPlease allow camera permission or use "Choose from Gallery".');
+      }
+    });
+
+    captureBtn.addEventListener('click', () => {
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      canvas.toBlob(blob => {
+        const file = new File([blob], 'photo-' + Date.now() + '.jpg', { type: 'image/jpeg' });
+        setPhoto(file);
+        stopCamera();
+      }, 'image/jpeg', 0.9);
+    });
+
+    closeBtn.addEventListener('click', stopCamera);
+
+    function stopCamera() {
+      if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+      modal.style.display = 'none';
+    }
+
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errorMsg   = document.getElementById('errorMsg');
+      const successMsg = document.getElementById('successMsg');
+      const submitBtn  = document.getElementById('submitBtn');
+      errorMsg.style.display = successMsg.style.display = 'none';
+
+      if (document.getElementById('password').value !== document.getElementById('confirmPassword').value) {
+        errorMsg.textContent = 'Passwords do not match';
+        errorMsg.style.display = 'block';
+        return;
+      }
+
+      if (!window._selectedPhoto) {
+        errorMsg.textContent = 'Profile photo is required. Please take or choose a photo.';
+        errorMsg.style.display = 'block';
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('email',            document.getElementById('email').value);
+      formData.append('location',         document.getElementById('location').value);
+      formData.append('newJoinerName',    document.getElementById('newJoinerName').value);
+      formData.append('newJoinerPhone',   document.getElementById('newJoinerPhone').value);
+      formData.append('newJoinerEmailId', document.getElementById('newJoinerEmailId').value);
+      formData.append('reportingManager', document.getElementById('reportingManager').value);
+      formData.append('position',         document.getElementById('position').value);
+      formData.append('password',         document.getElementById('password').value);
+      formData.append('photo',            window._selectedPhoto);
+      const cvFile = document.getElementById('cv').files[0];
+      if (cvFile) formData.append('cv', cvFile);
+
+      submitBtn.textContent = 'Submitting...';
+      submitBtn.disabled = true;
+
+      try {
+        const res  = await fetch('/api/auth/register', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorMsg.textContent = data.message || 'Registration failed';
+          errorMsg.style.display = 'block';
+          submitBtn.textContent = 'Submit Registration';
+          submitBtn.disabled = false;
+          return;
+        }
+
+        successMsg.textContent = '✓ Registration successful! Redirecting to login...';
+        successMsg.style.display = 'block';
+        setTimeout(() => window.location.href = 'index.html', 2000);
+      } catch {
+        errorMsg.textContent = 'Server error. Please try again.';
+        errorMsg.style.display = 'block';
+        submitBtn.textContent = 'Submit Registration';
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

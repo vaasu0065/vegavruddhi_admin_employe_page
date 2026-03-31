@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vegavruddhi – Merchant Form</title>
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .form-page { max-width: 680px; margin: 0 auto; padding: 32px 24px; }
+
+    .form-card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(26,71,49,0.10);
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .form-card-header {
+      background: var(--green-dark);
+      padding: 18px 28px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .form-card-header .fch-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: rgba(255,255,255,0.15);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .form-card-header h3 { color: #fff; font-size: 15px; font-weight: 700; }
+    .form-card-header p  { color: rgba(255,255,255,0.7); font-size: 12px; margin-top: 2px; }
+
+    .form-card-body { padding: 24px 28px; }
+
+    .form-card-body .form-group { margin-bottom: 18px; }
+    .form-card-body .form-group:last-child { margin-bottom: 0; }
+
+    .form-card-body label {
+      display: block; font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--text-mid); margin-bottom: 7px;
+      font-family: var(--font);
+    }
+
+    .form-card-body input[type="text"],
+    .form-card-body input[type="tel"],
+    .form-card-body select {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid #dde8dd; border-radius: 8px;
+      font-size: 14px; font-family: var(--font);
+      color: var(--text-dark); background: #fafcfa;
+      transition: border 0.2s, box-shadow 0.2s; outline: none;
+    }
+    .form-card-body input:focus,
+    .form-card-body select:focus {
+      border-color: var(--green-light);
+      box-shadow: 0 0 0 3px rgba(64,145,108,0.12);
+      background: #fff;
+    }
+
+    /* Radio / Yes-No groups */
+    .radio-group { display: flex; gap: 12px; flex-wrap: wrap; }
+    .radio-option {
+      flex: 1; min-width: 100px;
+      border: 1.5px solid #dde8dd; border-radius: 8px;
+      padding: 10px 14px; cursor: pointer;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 14px; font-weight: 500; color: var(--text-dark);
+      transition: border-color 0.2s, background 0.2s;
+      background: #fafcfa;
+    }
+    .radio-option input[type="radio"] { accent-color: var(--green-dark); width: 16px; height: 16px; }
+    .radio-option:has(input:checked) {
+      border-color: var(--green-dark);
+      background: var(--green-pale);
+      color: var(--green-dark);
+    }
+
+    /* Conditional sections */
+    .conditional { display: none; }
+    .conditional.visible { display: block; }
+
+    /* Product chips for Bharat Pay */
+    .chip-group { display: flex; flex-wrap: wrap; gap: 10px; }
+    .chip {
+      padding: 8px 16px; border-radius: 20px;
+      border: 1.5px solid #dde8dd; background: #fafcfa;
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      transition: all 0.2s; color: var(--text-dark);
+    }
+    .chip input[type="radio"] { display: none; }
+    .chip:has(input:checked) {
+      background: var(--green-dark); color: #fff;
+      border-color: var(--green-dark);
+    }
+
+    .submit-btn {
+      width: 100%; padding: 14px;
+      background: var(--green-dark); color: #fff;
+      border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 700; font-family: var(--font);
+      cursor: pointer; transition: background 0.2s;
+      margin-top: 8px;
+    }
+    .submit-btn:hover { background: var(--green-mid); }
+    .submit-btn:disabled { background: #aaa; cursor: not-allowed; }
+
+    .page-title {
+      font-size: 22px; font-weight: 700;
+      color: var(--green-dark); margin-bottom: 6px;
+    }
+    .page-sub { font-size: 13px; color: var(--text-light); margin-bottom: 24px; }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="nav-logo"><a href="dashboard.html"><img src="logo-full.png" alt="Vegavruddhi Pvt. Ltd." /></a></div>
+    <div class="nav-right">
+      <div class="nav-profile" id="profileToggle">
+        <div class="nav-avatar"   id="navAvatar">?</div>
+        <div class="nav-info">
+          <div class="name"         id="navName">Loading...</div>
+          <div class="status-badge" id="navStatus">Active</div>
+        </div>
+        <span class="nav-chevron">▾</span>
+        <div class="dropdown-menu" id="dropdownMenu">
+          <div class="dropdown-header">
+            <div class="dh-name"  id="ddName">–</div>
+            <div class="dh-email" id="ddEmail">–</div>
+          </div>
+          <a href="dashboard.html" onclick="event.stopPropagation()">&#127968;&nbsp; Dashboard</a>
+          <a href="profile.html"   onclick="event.stopPropagation()">&#128100;&nbsp; My Profile</a>
+          <a href="#" class="logout" id="logoutBtn" onclick="event.stopPropagation()">&#128682;&nbsp; Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="form-page">
+    <div class="page-title">&#128203; Merchant Visit Form</div>
+    <div class="page-sub">Fill in the details after your merchant meeting</div>
+
+    <div class="error-msg"   id="errorMsg"></div>
+    <div class="success-msg" id="successMsg"></div>
+
+    <form id="merchantForm">
+
+      <!-- ── CARD 1: Customer Details ── -->
+      <div class="form-card">
+        <div class="form-card-header">
+          <div class="fch-icon">&#128101;</div>
+          <div><h3>Customer Details</h3><p>Basic merchant information</p></div>
+        </div>
+        <div class="form-card-body">
+          <div class="form-group">
+            <label>Customer Name <span class="req">*</span></label>
+            <input type="text" id="customerName" placeholder="Enter customer name" required />
+          </div>
+          <div class="form-group">
+            <label>Customer Number <span class="req">*</span></label>
+            <input type="tel" id="customerNumber" placeholder="Enter phone number" required />
+          </div>
+          <div class="form-group">
+            <label>Location <span class="req">*</span></label>
+            <input type="text" id="location" placeholder="Enter location" required />
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CARD 2: Visit Status ── -->
+      <div class="form-card">
+        <div class="form-card-header">
+          <div class="fch-icon">&#128204;</div>
+          <div><h3>Visit Status</h3><p>Outcome of the merchant visit</p></div>
+        </div>
+        <div class="form-card-body">
+          <div class="form-group">
+            <label>Status <span class="req">*</span></label>
+            <div class="radio-group">
+              <label class="radio-option"><input type="radio" name="status" value="Ready for Onboarding" required /> Ready for Onboarding</label>
+              <label class="radio-option"><input type="radio" name="status" value="Not Interested" /> Not Interested</label>
+              <label class="radio-option"><input type="radio" name="status" value="Try but not done due to error" /> Try but not done due to error</label>
+              <label class="radio-option"><input type="radio" name="status" value="Need to visit again" /> Need to visit again</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CARD 3: Conditional based on status ── -->
+
+      <!-- READY FOR ONBOARDING → full product form -->
+      <div id="card_onboarding" style="display:none;">
+        <div class="form-card">
+          <div class="form-card-header">
+            <div class="fch-icon">&#128196;</div>
+            <div><h3>Form Filling For</h3><p>Select the product / service</p></div>
+          </div>
+          <div class="form-card-body">
+            <div class="form-group">
+              <label>Select Product <span class="req">*</span></label>
+              <select id="formFillingFor" onchange="showConditional(this.value)">
+                <option value="">-- Choose --</option>
+                <option value="Tide">Tide</option>
+                <option value="Kotak 811">Kotak 811</option>
+                <option value="Insurance">Insurance</option>
+                <option value="PineLab">PineLab</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Tide Insurance">Tide Insurance</option>
+                <option value="MSME">MSME</option>
+                <option value="Airtel Payments Bank">Airtel Payments Bank</option>
+                <option value="Equitas SF Bank">Equitas SF Bank</option>
+                <option value="IndusInd Bank">IndusInd Bank</option>
+                <option value="Bharat Pay">Bharat Pay</option>
+                <option value="Tide Credit Card">Tide Credit Card</option>
+              </select>
+            </div>
+
+            <!-- TIDE -->
+            <div class="conditional" id="cond_Tide">
+              <div class="form-group">
+                <label>QR Posted <span class="req">*</span></label>
+                <div class="radio-group">
+                  <label class="radio-option"><input type="radio" name="tide_qrPosted" value="Yes" /> Yes</label>
+                  <label class="radio-option"><input type="radio" name="tide_qrPosted" value="No"  /> No</label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Rs 10/30 UPI Txn Done <span class="req">*</span></label>
+                <div class="radio-group">
+                  <label class="radio-option"><input type="radio" name="tide_upiTxnDone" value="Yes" /> Yes</label>
+                  <label class="radio-option"><input type="radio" name="tide_upiTxnDone" value="No"  /> No</label>
+                </div>
+              </div>
+            </div>
+
+            <!-- KOTAK 811 -->
+            <div class="conditional" id="cond_Kotak 811">
+              <div class="form-group">
+                <label>Rs 2000 Txn Done <span class="req">*</span></label>
+                <div class="radio-group">
+                  <label class="radio-option"><input type="radio" name="kotak_txnDone" value="Yes" /> Yes</label>
+                  <label class="radio-option"><input type="radio" name="kotak_txnDone" value="No"  /> No</label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Wi-Fi &amp; Bluetooth Off at time of Onboarding <span class="req">*</span></label>
+                <div class="radio-group">
+                  <label class="radio-option"><input type="radio" name="kotak_wifiBtOff" value="Yes" /> Yes</label>
+                  <label class="radio-option"><input type="radio" name="kotak_wifiBtOff" value="No"  /> No</label>
+                </div>
+              </div>
+            </div>
+
+            <!-- INSURANCE -->
+            <div class="conditional" id="cond_Insurance">
+              <div class="form-group">
+                <label>Vehicle Number <span class="req">*</span></label>
+                <input type="text" id="ins_vehicleNumber" placeholder="e.g. MH12AB1234" />
+              </div>
+              <div class="form-group">
+                <label>Vehicle Type <span class="req">*</span></label>
+                <div class="radio-group">
+                  <label class="radio-option"><input type="radio" name="ins_vehicleType" value="2 Wheeler"  /> 2 Wheeler</label>
+                  <label class="radio-option"><input type="radio" name="ins_vehicleType" value="4 Wheeler"  /> 4 Wheeler</label>
+                  <label class="radio-option"><input type="radio" name="ins_vehicleType" value="Commercial" /> Commercial</label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Insurance Type <span class="req">*</span></label>
+                <div class="radio-group">
+                  <label class="radio-option"><input type="radio" name="ins_insuranceType" value="3rd Party"      /> 3rd Party</label>
+                  <label class="radio-option"><input type="radio" name="ins_insuranceType" value="Only OD"        /> Only OD</label>
+                  <label class="radio-option"><input type="radio" name="ins_insuranceType" value="OD + 3rd Party" /> OD + 3rd Party</label>
+                </div>
+              </div>
+            </div>
+
+            <!-- PINELAB -->
+            <div class="conditional" id="cond_PineLab">
+              <div class="form-group">
+                <label>Card Txn done of Rs 100 <span class="req">*</span></label>
+                <div class="radio-group">
+                  <label class="radio-option"><input type="radio" name="pine_cardTxn" value="Yes" /> Yes</label>
+                  <label class="radio-option"><input type="radio" name="pine_cardTxn" value="No"  /> No</label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Machine connected with Wi-Fi <span class="req">*</span></label>
+                <div class="radio-group">
+                  <label class="radio-option"><input type="radio" name="pine_wifiConnected" value="Yes" /> Yes</label>
+                  <label class="radio-option"><input type="radio" name="pine_wifiConnected" value="No"  /> No</label>
+                </div>
+              </div>
+            </div>
+
+            <!-- CREDIT CARD -->
+            <div class="conditional" id="cond_Credit Card">
+              <div class="form-group">
+                <label>Name of the Credit Card <span class="req">*</span></label>
+                <input type="text" id="cc_cardName" placeholder="e.g. HDFC Regalia" />
+              </div>
+            </div>
+
+            <!-- TIDE INSURANCE -->
+            <div class="conditional" id="cond_Tide Insurance">
+              <div class="form-group">
+                <label>Type of Insurance <span class="req">*</span></label>
+                <div class="radio-group">
+                  <label class="radio-option"><input type="radio" name="tideIns_type" value="Cyber Security" /> Cyber Security</label>
+                  <label class="radio-option"><input type="radio" name="tideIns_type" value="Accidental"     /> Accidental</label>
+                </div>
+              </div>
+            </div>
+
+            <!-- BHARAT PAY -->
+            <div class="conditional" id="cond_Bharat Pay">
+              <div class="form-group">
+                <label>Product <span class="req">*</span></label>
+                <div class="chip-group">
+                  <label class="chip"><input type="radio" name="bp_product" value="New Onboarding"        /> New Onboarding</label>
+                  <label class="chip"><input type="radio" name="bp_product" value="QR Re-linking"         /> QR Re-linking</label>
+                  <label class="chip"><input type="radio" name="bp_product" value="Re-visit"              /> Re-visit</label>
+                  <label class="chip"><input type="radio" name="bp_product" value="Loan"                  /> Loan</label>
+                  <label class="chip"><input type="radio" name="bp_product" value="Sound Box"             /> Sound Box</label>
+                  <label class="chip"><input type="radio" name="bp_product" value="Swipe"                 /> Swipe</label>
+                  <label class="chip"><input type="radio" name="bp_product" value="Mid Market Onboarding" /> Mid Market Onboarding</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOT ONBOARDING → checkbox product list -->
+      <div id="card_notOnboarding" style="display:none;">
+        <div class="form-card">
+          <div class="form-card-header">
+            <div class="fch-icon">&#9744;</div>
+            <div><h3>Products Discussed</h3><p>Select all products that were discussed</p></div>
+          </div>
+          <div class="form-card-body">
+            <div class="form-group">
+              <label>Select Products <span class="req">*</span></label>
+              <div class="checkbox-group">
+                <label class="checkbox-option"><input type="checkbox" name="attemptedProducts" value="Tide"        /> Tide</label>
+                <label class="checkbox-option"><input type="checkbox" name="attemptedProducts" value="Kotak"       /> Kotak</label>
+                <label class="checkbox-option"><input type="checkbox" name="attemptedProducts" value="Insurance"   /> Insurance</label>
+                <label class="checkbox-option"><input type="checkbox" name="attemptedProducts" value="Pinelab"     /> Pinelab</label>
+                <label class="checkbox-option"><input type="checkbox" name="attemptedProducts" value="Credit Card" /> Credit Card</label>
+                <label class="checkbox-option"><input type="checkbox" name="attemptedProducts" value="BharatPe"    /> BharatPe</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submitBtn">&#10003; Submit Form Response</button>
+    </form>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = 'index.html';
+
+    // Navbar
+    document.getElementById('profileToggle').addEventListener('click', (e) => {
+      if (e.target.closest('a')) return;
+      document.getElementById('dropdownMenu').classList.toggle('open');
+    });
+    document.addEventListener('click', (e) => {
+      if (!document.getElementById('profileToggle').contains(e.target))
+        document.getElementById('dropdownMenu').classList.remove('open');
+    });
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+      e.preventDefault(); localStorage.clear(); window.location.href = 'index.html';
+    });
+
+    // Load nav info
+    fetch('/api/auth/profile', { headers: { 'Authorization': 'Bearer ' + token } })
+      .then(r => r.json()).then(emp => {
+        const initials = emp.newJoinerName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
+        document.getElementById('navAvatar').textContent = initials;
+        document.getElementById('navName').textContent   = emp.newJoinerName;
+        document.getElementById('navStatus').textContent = emp.status;
+        document.getElementById('ddName').textContent    = emp.newJoinerName;
+        document.getElementById('ddEmail').textContent   = emp.email;
+      });
+
+    // Show/hide card based on status selection
+    document.querySelectorAll('input[name="status"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const val = radio.value;
+        const isOnboarding = val === 'Ready for Onboarding';
+        document.getElementById('card_onboarding').style.display    = isOnboarding ? 'block' : 'none';
+        document.getElementById('card_notOnboarding').style.display = isOnboarding ? 'none'  : 'block';
+        // reset product select & conditionals when switching
+        if (isOnboarding) {
+          document.getElementById('formFillingFor').value = '';
+          document.querySelectorAll('.conditional').forEach(el => el.classList.remove('visible'));
+        }
+      });
+    });
+
+    // Show/hide conditional product sub-fields
+    function showConditional(val) {
+      document.querySelectorAll('.conditional').forEach(el => el.classList.remove('visible'));
+      if (val) {
+        const el = document.getElementById('cond_' + val);
+        if (el) el.classList.add('visible');
+      }
+    }
+
+    // Get radio value helper
+    function getRadio(name) {
+      const el = document.querySelector(`input[name="${name}"]:checked`);
+      return el ? el.value : '';
+    }
+
+    // Submit
+    document.getElementById('merchantForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errorMsg   = document.getElementById('errorMsg');
+      const successMsg = document.getElementById('successMsg');
+      const submitBtn  = document.getElementById('submitBtn');
+      errorMsg.style.display = successMsg.style.display = 'none';
+
+      const status = getRadio('status');
+      if (!status) { errorMsg.textContent = 'Please select a visit status.'; errorMsg.style.display = 'block'; return; }
+
+      const isOnboarding = status === 'Ready for Onboarding';
+
+      // Validate product section
+      if (isOnboarding) {
+        const product = document.getElementById('formFillingFor').value;
+        if (!product) { errorMsg.textContent = 'Please select a product.'; errorMsg.style.display = 'block'; return; }
+      } else {
+        const checked = document.querySelectorAll('input[name="attemptedProducts"]:checked');
+        if (!checked.length) { errorMsg.textContent = 'Please select at least one product discussed.'; errorMsg.style.display = 'block'; return; }
+      }
+
+      const payload = {
+        customerName:   document.getElementById('customerName').value,
+        customerNumber: document.getElementById('customerNumber').value,
+        location:       document.getElementById('location').value,
+        status,
+        formFillingFor: isOnboarding ? document.getElementById('formFillingFor').value : '',
+        attemptedProducts: isOnboarding ? [] : [...document.querySelectorAll('input[name="attemptedProducts"]:checked')].map(c => c.value),
+        // Onboarding sub-fields
+        tide_qrPosted:      getRadio('tide_qrPosted'),
+        tide_upiTxnDone:    getRadio('tide_upiTxnDone'),
+        kotak_txnDone:      getRadio('kotak_txnDone'),
+        kotak_wifiBtOff:    getRadio('kotak_wifiBtOff'),
+        ins_vehicleNumber:  document.getElementById('ins_vehicleNumber')?.value || '',
+        ins_vehicleType:    getRadio('ins_vehicleType'),
+        ins_insuranceType:  getRadio('ins_insuranceType'),
+        pine_cardTxn:       getRadio('pine_cardTxn'),
+        pine_wifiConnected: getRadio('pine_wifiConnected'),
+        cc_cardName:        document.getElementById('cc_cardName')?.value || '',
+        tideIns_type:       getRadio('tideIns_type'),
+        bp_product:         getRadio('bp_product'),
+      };
+
+      submitBtn.textContent = 'Submitting...';
+      submitBtn.disabled = true;
+
+      try {
+        const res  = await fetch('/api/forms/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          errorMsg.textContent = data.message || 'Submission failed';
+          errorMsg.style.display = 'block';
+          submitBtn.textContent = '✓ Submit Form Response';
+          submitBtn.disabled = false;
+          return;
+        }
+
+        successMsg.textContent = '✓ Form submitted successfully! Redirecting to dashboard...';
+        successMsg.style.display = 'block';
+        setTimeout(() => window.location.href = 'dashboard.html', 2000);
+      } catch {
+        errorMsg.textContent = 'Server error. Please try again.';
+        errorMsg.style.display = 'block';
+        submitBtn.textContent = '✓ Submit Form Response';
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+  <footer class="footer">
+    <div class="footer-track">
+      <div class="footer-item"><img src="logo-full.png" alt="" class="footer-logo"/><span class="footer-text">Vegavruddhi Pvt. Ltd.</span><span class="footer-dot">·</span><span class="footer-tagline">IT &amp; Business Consultation Services</span></div>
+      <div class="footer-item"><img src="logo-full.png" alt="" class="footer-logo"/><span class="footer-text">Vegavruddhi Pvt. Ltd.</span><span class="footer-dot">·</span><span class="footer-tagline">IT &amp; Business Consultation Services</span></div>
+      <div class="footer-item"><img src="logo-full.png" alt="" class="footer-logo"/><span class="footer-text">Vegavruddhi Pvt. Ltd.</span><span class="footer-dot">·</span><span class="footer-tagline">IT &amp; Business Consultation Services</span></div>
+      <div class="footer-item"><img src="logo-full.png" alt="" class="footer-logo"/><span class="footer-text">Vegavruddhi Pvt. Ltd.</span><span class="footer-dot">·</span><span class="footer-tagline">IT &amp; Business Consultation Services</span></div>
+      <div class="footer-item"><img src="logo-full.png" alt="" class="footer-logo"/><span class="footer-text">Vegavruddhi Pvt. Ltd.</span><span class="footer-dot">·</span><span class="footer-tagline">IT &amp; Business Consultation Services</span></div>
+      <div class="footer-item"><img src="logo-full.png" alt="" class="footer-logo"/><span class="footer-text">Vegavruddhi Pvt. Ltd.</span><span class="footer-dot">·</span><span class="footer-tagline">IT &amp; Business Consultation Services</span></div>
+    </div>
+  </footer>
+
+</body>
+</html>

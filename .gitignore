@@ -1,0 +1,10 @@
+node_modules/
+.env
+.DS_Store
+*.log
+uploads/
+fse-performance-dashboard-main/fse-dashboard/node_modules/
+fse-performance-dashboard-main/__pycache__/
+*.pyc
+*credentials*.json
+client_secret*.json
