@@ -313,8 +313,12 @@
         document.getElementById('kpi_verified').textContent = verifiedCount;
         var totalPts = calcPoints(allForms, verifiedMap);
         document.getElementById('kpi_points').textContent   = totalPts;
-        // Save verified points to backend so admin can see them
-        var autoPts = calcPoints(allForms, verifiedMap) - _pointsAdjustment;
+        // Save only raw auto-verified points (no adjustment) so admin sees correct breakdown
+        var autoPts = 0;
+        allForms.forEach(function(f) {
+          var info = verifiedMap[f.customerNumber];
+          if (info && info.status === 'Fully Verified') autoPts += POINTS_MAP[f.formFillingFor] || 0;
+        });
         fetch('/api/forms/save-verified-points', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
