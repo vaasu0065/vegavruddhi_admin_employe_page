@@ -170,7 +170,7 @@ router.get('/admin/settlements', async (req, res) => {
 const POINTS_MAP = {
   'Tide':             2,
   'MSME':             0.3,
-  'Insurance':        1,
+  'Tide Insurance':   1,
   'Tide Credit Card': 1,
 };
 

@@ -147,7 +147,7 @@ async function exportToGoogleSheets(forms, setExporting, setError) {
 }
 
 // ── Points calculation (client-side, mirrors backend POINTS_MAP) ─
-const POINTS_MAP = { 'Tide': 2, 'MSME': 0.3, 'Insurance': 1, 'Tide Credit Card': 1 };
+const POINTS_MAP = { 'Tide': 2, 'MSME': 0.3, 'Tide Insurance': 1, 'Tide Credit Card': 1 };
 
 function calcAutoPoints(forms, verifiedPhones) {
   return forms.reduce((sum, f) => {
@@ -356,10 +356,9 @@ function EmployeeGroup({ empName, forms, duplicatePhones, empPointsData, onEditP
   const [expanded, setExpanded] = useState(false);
   const dupCount = forms.filter(f => duplicatePhones.has(f.customerNumber)).length;
 
-  // Auto points from fully-verified merchants (we don't have verifiedMap here, show product-based estimate)
-  const autoPoints = forms.reduce((sum, f) => sum + (POINTS_MAP[f.formFillingFor] || 0), 0);
-  const adjustment = empPointsData?.pointsAdjustment || 0;
-  const totalPoints = Math.round((autoPoints + adjustment) * 10) / 10;
+  // Admin can't know verification status — show only adjustment + note
+  const adjustment  = empPointsData?.pointsAdjustment || 0;
+  const totalPoints = Math.round(adjustment * 10) / 10;
 
   return (
     <Card sx={{ mb: 2, border: `1.5px solid ${BRAND.primaryLight || '#c8e6c9'}`, borderRadius: 2 }}>
@@ -380,11 +379,11 @@ function EmployeeGroup({ empName, forms, duplicatePhones, empPointsData, onEditP
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {/* Points badge */}
-          <Tooltip title={`Auto: ${Math.round(autoPoints*10)/10} pts + Adjustment: ${adjustment >= 0 ? '+' : ''}${adjustment} = ${totalPoints} pts`}>
+          <Tooltip title={`Admin adjustment: ${adjustment >= 0 ? '+' : ''}${adjustment} pts (auto-points calculated on employee dashboard from Fully Verified merchants only)`}>
             <Chip
-              label={`⭐ ${totalPoints} pts`}
+              label={`⭐ ${adjustment >= 0 ? '+' : ''}${adjustment} adj`}
               size="small"
-              onClick={e => { e.stopPropagation(); onEditPoints(empName, empPointsData, autoPoints); }}
+              onClick={e => { e.stopPropagation(); onEditPoints(empName, empPointsData, 0); }}
               sx={{ bgcolor: '#fff8e1', color: '#e76f51', fontWeight: 800, fontSize: 11,
                 border: '1.5px solid #f4a261', cursor: 'pointer',
                 '&:hover': { bgcolor: '#ffe0b2' } }}
@@ -765,16 +764,16 @@ export default function MerchantForms() {
             ))}
           </Box>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-            Auto-calculated points (from verified merchants): <strong style={{ color: '#e76f51' }}>{Math.round((editPtsEmp?.autoPoints || 0) * 10) / 10}</strong>
+            Auto-points are calculated on the employee's dashboard from <strong>Fully Verified</strong> merchants only. Here you can add a manual adjustment on top.
           </Typography>
           <TextField fullWidth size="small" type="number" label="Manual Adjustment (+ or -)"
             value={editPtsValue}
             onChange={e => setEditPtsValue(e.target.value)}
-            helperText="This value is added to the auto-calculated points. Use negative to subtract."
+            helperText="Added to the employee's auto-calculated verified points. Use negative to subtract."
             inputProps={{ step: 0.1 }} />
           <Box sx={{ mt: 1.5, p: 1.5, bgcolor: '#e6f4ea', borderRadius: 2 }}>
             <Typography variant="body2" fontWeight={700} sx={{ color: BRAND.primary }}>
-              Total Points: {Math.round(((editPtsEmp?.autoPoints || 0) + (parseFloat(editPtsValue) || 0)) * 10) / 10}
+              Adjustment: {parseFloat(editPtsValue) >= 0 ? '+' : ''}{parseFloat(editPtsValue) || 0} pts
             </Typography>
           </Box>
         </DialogContent>
