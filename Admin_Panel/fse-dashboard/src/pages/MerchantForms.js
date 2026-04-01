@@ -358,7 +358,8 @@ function EmployeeGroup({ empName, forms, duplicatePhones, empPointsData, onEditP
 
   // Admin can't know verification status — show only adjustment + note
   const adjustment  = empPointsData?.pointsAdjustment || 0;
-  const totalPoints = Math.round(adjustment * 10) / 10;
+  const verified    = empPointsData?.verifiedPoints    || 0;
+  const totalPoints = Math.round((verified + adjustment) * 10) / 10;
 
   return (
     <Card sx={{ mb: 2, border: `1.5px solid ${BRAND.primaryLight || '#c8e6c9'}`, borderRadius: 2 }}>
@@ -379,11 +380,11 @@ function EmployeeGroup({ empName, forms, duplicatePhones, empPointsData, onEditP
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {/* Points badge */}
-          <Tooltip title={`Admin adjustment: ${adjustment >= 0 ? '+' : ''}${adjustment} pts (auto-points calculated on employee dashboard from Fully Verified merchants only)`}>
+          <Tooltip title={`Verified: ${verified} pts + Adjustment: ${adjustment >= 0 ? '+' : ''}${adjustment} = ${totalPoints} pts`}>
             <Chip
-              label={`⭐ ${adjustment >= 0 ? '+' : ''}${adjustment} adj`}
+              label={`⭐ ${totalPoints} pts`}
               size="small"
-              onClick={e => { e.stopPropagation(); onEditPoints(empName, empPointsData, 0); }}
+              onClick={e => { e.stopPropagation(); onEditPoints(empName, empPointsData, verified); }}
               sx={{ bgcolor: '#fff8e1', color: '#e76f51', fontWeight: 800, fontSize: 11,
                 border: '1.5px solid #f4a261', cursor: 'pointer',
                 '&:hover': { bgcolor: '#ffe0b2' } }}
@@ -755,16 +756,16 @@ export default function MerchantForms() {
             ))}
           </Box>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-            Auto-points are calculated on the employee's dashboard from <strong>Fully Verified</strong> merchants only. Here you can add a manual adjustment on top.
+            Verified points (from employee dashboard, Fully Verified only): <strong style={{ color: '#e76f51' }}>{editPtsEmp?.autoPoints || 0}</strong>
           </Typography>
           <TextField fullWidth size="small" type="number" label="Manual Adjustment (+ or -)"
             value={editPtsValue}
             onChange={e => setEditPtsValue(e.target.value)}
-            helperText="Added to the employee's auto-calculated verified points. Use negative to subtract."
+            helperText="Added on top of verified points. Use negative to subtract."
             inputProps={{ step: 0.1 }} />
           <Box sx={{ mt: 1.5, p: 1.5, bgcolor: '#e6f4ea', borderRadius: 2 }}>
             <Typography variant="body2" fontWeight={700} sx={{ color: BRAND.primary }}>
-              Adjustment: {parseFloat(editPtsValue) >= 0 ? '+' : ''}{parseFloat(editPtsValue) || 0} pts
+              Total: {editPtsEmp?.autoPoints || 0} + ({parseFloat(editPtsValue) >= 0 ? '+' : ''}{parseFloat(editPtsValue) || 0}) = {Math.round(((editPtsEmp?.autoPoints || 0) + (parseFloat(editPtsValue) || 0)) * 10) / 10} pts
             </Typography>
           </Box>
         </DialogContent>

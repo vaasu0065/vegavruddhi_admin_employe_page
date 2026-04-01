@@ -311,7 +311,15 @@
           return verifiedMap[f.customerNumber] && verifiedMap[f.customerNumber].status === 'Fully Verified';
         }).length;
         document.getElementById('kpi_verified').textContent = verifiedCount;
-        document.getElementById('kpi_points').textContent   = calcPoints(allForms, verifiedMap);
+        var totalPts = calcPoints(allForms, verifiedMap);
+        document.getElementById('kpi_points').textContent   = totalPts;
+        // Save verified points to backend so admin can see them
+        var autoPts = calcPoints(allForms, verifiedMap) - _pointsAdjustment;
+        fetch('/api/forms/save-verified-points', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ verifiedPoints: Math.round(autoPts * 10) / 10 })
+        }).catch(function(){});
       }
     }
 

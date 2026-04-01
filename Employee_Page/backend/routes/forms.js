@@ -185,7 +185,7 @@ router.get('/admin/employee-points', async (req, res) => {
     // so we return all forms and let the client calculate auto-points,
     // but we store admin adjustments in Employee.pointsAdjustment
     const employees = await Employee.find({ approvalStatus: 'approved' })
-      .select('_id newJoinerName pointsAdjustment').lean();
+      .select('_id newJoinerName pointsAdjustment verifiedPoints').lean();
 
     res.json(employees);
   } catch (err) {
@@ -217,8 +217,20 @@ router.put('/admin/adjust-points/:employeeId', async (req, res) => {
 router.get('/my-points', verifyToken, async (req, res) => {
   try {
     const Employee = require('../models/Employee');
-    const emp = await Employee.findById(req.user.id).select('pointsAdjustment').lean();
-    res.json({ pointsAdjustment: emp?.pointsAdjustment || 0 });
+    const emp = await Employee.findById(req.user.id).select('pointsAdjustment verifiedPoints').lean();
+    res.json({ pointsAdjustment: emp?.pointsAdjustment || 0, verifiedPoints: emp?.verifiedPoints || 0 });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// PUT /api/forms/save-verified-points — employee dashboard saves auto-calculated verified points
+router.put('/save-verified-points', verifyToken, async (req, res) => {
+  try {
+    const Employee = require('../models/Employee');
+    const { verifiedPoints } = req.body;
+    await Employee.findByIdAndUpdate(req.user.id, { verifiedPoints: Number(verifiedPoints) || 0 });
+    res.json({ message: 'Saved' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

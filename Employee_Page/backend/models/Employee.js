@@ -14,6 +14,7 @@ const employeeSchema = new mongoose.Schema({
   status:             { type: String, default: 'Active', enum: ['Active', 'Inactive', 'On Leave'] },
   approvalStatus:     { type: String, default: 'pending', enum: ['pending', 'approved', 'rejected'] },
   pointsAdjustment:   { type: Number, default: 0 },  // admin manual +/- adjustment
+  verifiedPoints:     { type: Number, default: 0 },  // auto-calculated from fully verified merchants
   createdAt:          { type: Date, default: Date.now }
 }, { collection: 'Users' });
 
