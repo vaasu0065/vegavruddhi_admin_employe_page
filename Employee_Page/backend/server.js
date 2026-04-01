@@ -14,7 +14,6 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(uploadsDir));
-app.use(express.static(path.join(__dirname, '../frontend')));
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/forms', require('./routes/forms'));
@@ -22,7 +21,7 @@ app.use('/api/verify', require('./routes/verify'));
 app.use('/api/requests', require('./routes/requests'));
 
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+  res.status(404).json({ message: 'Not found' });
 });
 
 mongoose.connect(process.env.MONGO_URI)
