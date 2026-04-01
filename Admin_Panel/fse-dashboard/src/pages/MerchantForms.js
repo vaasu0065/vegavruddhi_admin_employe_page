@@ -189,58 +189,134 @@ function StatusChip({ status }) {
 }
 
 // ── Duplicate Alert Panel ─────────────────────────────────────
-function DuplicatePanel({ duplicates, open, onClose, onNotify, notifying }) {
+function DuplicatePanel({ duplicates, open, onClose, onNotify, notifying, onSettle, settling }) {
+  const [tab, setTab]               = useState('active');
+  const [settlements, setSettlements] = useState([]);
+  const [loadingSett, setLoadingSett] = useState(false);
+  const [settleNote, setSettleNote]   = useState({});
+
+  const loadSettlements = useCallback(async () => {
+    setLoadingSett(true);
+    try {
+      const res  = await fetch(`${EMP_API}/forms/admin/settlements`);
+      setSettlements(res.ok ? await res.json() : []);
+    } catch { /* ignore */ } finally { setLoadingSett(false); }
+  }, []);
+
+  useEffect(() => { if (open && tab === 'settled') loadSettlements(); }, [open, tab, loadSettlements]);
+  // Reload settlements after a new settle action
+  useEffect(() => { if (open && settling === null && tab === 'settled') loadSettlements(); }, [settling]);
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#c62828', fontWeight: 800 }}>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#c62828', fontWeight: 800, pb: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <WarningAmberIcon /> Cross-Employee Duplicate Merchants ({duplicates.length})
+          <WarningAmberIcon /> Cross-Employee Duplicate Merchants
         </Box>
         <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
       </DialogTitle>
-      <DialogContent dividers>
-        {duplicates.length === 0 ? (
-          <Typography color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>No cross-employee duplicates found.</Typography>
-        ) : duplicates.map((dup, i) => (
-          <Card key={i} sx={{ mb: 2, border: '1.5px solid #ffcdd2', borderRadius: 2 }}>
-            <CardContent sx={{ pb: '12px !important' }}>
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap', mb: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                  <WarningAmberIcon sx={{ color: '#c62828', fontSize: 18 }} />
-                  <Typography fontWeight={800} sx={{ color: '#c62828' }}>
-                    {dup.customerNames[0] || dup._id.customerNumber}
+
+      {/* Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 3 }}>
+        <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ minHeight: 40,
+          '& .MuiTab-root': { fontWeight: 700, fontSize: 12, minHeight: 40 },
+          '& .MuiTabs-indicator': { bgcolor: BRAND.primary } }}>
+          <Tab value="active"  label={`Active (${duplicates.length})`} />
+          <Tab value="settled" label="Settled History" onClick={loadSettlements} />
+        </Tabs>
+      </Box>
+
+      <DialogContent dividers sx={{ p: 2 }}>
+        {/* ── Active duplicates ── */}
+        {tab === 'active' && (
+          duplicates.length === 0
+            ? <Typography color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>No active cross-employee duplicates.</Typography>
+            : duplicates.map((dup, i) => (
+              <Card key={i} sx={{ mb: 2, border: '1.5px solid #ffcdd2', borderRadius: 2 }}>
+                <CardContent sx={{ pb: '12px !important' }}>
+                  {/* Header row */}
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap', mb: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                      <WarningAmberIcon sx={{ color: '#c62828', fontSize: 18 }} />
+                      <Typography fontWeight={800} sx={{ color: '#c62828' }}>
+                        {dup.customerNames[0] || dup._id.customerNumber}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">({dup._id.customerNumber})</Typography>
+                      <ProductChip product={dup._id.formFillingFor} />
+                      <Chip label={`${dup.count} submissions`} size="small" sx={{ bgcolor: '#fdecea', color: '#c62828', fontWeight: 700 }} />
+                    </Box>
+                    {/* Action buttons */}
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      <Tooltip title="Send duplicate alert notification to both employees">
+                        <Button size="small" variant="outlined"
+                          disabled={notifying === i}
+                          startIcon={notifying === i ? <CircularProgress size={12} /> : <NotificationsIcon />}
+                          onClick={() => onNotify(dup, i)}
+                          sx={{ color: '#c62828', borderColor: '#c62828', fontWeight: 700, fontSize: 11,
+                            '&:hover': { bgcolor: '#fdecea' } }}>
+                          {notifying === i ? 'Notifying…' : 'Notify'}
+                        </Button>
+                      </Tooltip>
+                      <Tooltip title="Mark this duplicate as settled — record is kept for history">
+                        <Button size="small" variant="contained"
+                          disabled={settling === i}
+                          startIcon={settling === i ? <CircularProgress size={12} sx={{ color: 'inherit' }} /> : null}
+                          onClick={() => onSettle(dup, i, settleNote[i] || '')}
+                          sx={{ bgcolor: BRAND.primary, fontWeight: 700, fontSize: 11,
+                            '&:hover': { bgcolor: '#0f3320' } }}>
+                          {settling === i ? 'Settling…' : '✓ Mark Settled'}
+                        </Button>
+                      </Tooltip>
+                    </Box>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                    Customer names used: {dup.customerNames.join(', ')}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">({dup._id.customerNumber})</Typography>
-                  <ProductChip product={dup._id.formFillingFor} />
-                  <Chip label={`${dup.count} submissions`} size="small" sx={{ bgcolor: '#fdecea', color: '#c62828', fontWeight: 700 }} />
-                </Box>
-                {/* Notify button */}
-                <Tooltip title="Send duplicate alert notification to both employees">
-                  <Button
-                    size="small"
-                    variant="contained"
-                    disabled={notifying === i}
-                    startIcon={notifying === i ? <CircularProgress size={12} sx={{ color: 'inherit' }} /> : <NotificationsIcon />}
-                    onClick={() => onNotify(dup, i)}
-                    sx={{ bgcolor: '#c62828', fontWeight: 700, fontSize: 11, whiteSpace: 'nowrap',
-                      '&:hover': { bgcolor: '#b71c1c' } }}
-                  >
-                    {notifying === i ? 'Notifying…' : 'Notify Employees'}
-                  </Button>
-                </Tooltip>
-              </Box>
-              <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                Customer names used: {dup.customerNames.join(', ')}
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                {dup.employees.map((emp, j) => (
-                  <Chip key={j} avatar={<Avatar sx={{ bgcolor: BRAND.primary, fontSize: 11 }}>{initials(emp)}</Avatar>}
-                    label={emp} size="small" sx={{ fontWeight: 600 }} />
-                ))}
-              </Box>
-            </CardContent>
-          </Card>
-        ))}
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1.5 }}>
+                    {dup.employees.map((emp, j) => (
+                      <Chip key={j} avatar={<Avatar sx={{ bgcolor: BRAND.primary, fontSize: 11 }}>{initials(emp)}</Avatar>}
+                        label={emp} size="small" sx={{ fontWeight: 600 }} />
+                    ))}
+                  </Box>
+                  {/* Optional note */}
+                  <TextField size="small" fullWidth placeholder="Add settlement note (optional)…"
+                    value={settleNote[i] || ''}
+                    onChange={e => setSettleNote(prev => ({ ...prev, [i]: e.target.value }))}
+                    sx={{ '& .MuiOutlinedInput-root': { fontSize: 12 } }} />
+                </CardContent>
+              </Card>
+            ))
+        )}
+
+        {/* ── Settled history ── */}
+        {tab === 'settled' && (
+          loadingSett
+            ? <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={28} sx={{ color: BRAND.primary }} /></Box>
+            : settlements.length === 0
+              ? <Typography color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>No settled duplicates yet.</Typography>
+              : settlements.map((s, i) => (
+                <Card key={i} sx={{ mb: 2, border: `1.5px solid ${BRAND.primaryLight || '#c8e6c9'}`, borderRadius: 2 }}>
+                  <CardContent sx={{ pb: '12px !important' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
+                      <Chip label="✓ Settled" size="small" sx={{ bgcolor: '#e6f4ea', color: '#2e7d32', fontWeight: 700 }} />
+                      <Typography fontWeight={700} sx={{ color: 'text.primary' }}>{s.customerName || s.customerNumber}</Typography>
+                      <Typography variant="caption" color="text.secondary">({s.customerNumber})</Typography>
+                      <ProductChip product={s.product} />
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 0.5 }}>
+                      {(s.employees || []).map((emp, j) => (
+                        <Chip key={j} avatar={<Avatar sx={{ bgcolor: '#888', fontSize: 11 }}>{initials(emp)}</Avatar>}
+                          label={emp} size="small" sx={{ fontWeight: 600 }} />
+                      ))}
+                    </Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Settled on {new Date(s.settledAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      {s.note ? ` · Note: ${s.note}` : ''}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              ))
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} sx={{ color: BRAND.primary, fontWeight: 700 }}>Close</Button>
@@ -352,6 +428,35 @@ export default function MerchantForms() {
   const [exportAnchor, setExportAnchor] = useState(null);
   const [notifying,  setNotifying]  = useState(null); // index of dup being notified
   const [notifySnack, setNotifySnack] = useState('');
+  const [settling,   setSettling]   = useState(null); // index of dup being settled
+
+  const handleSettle = useCallback(async (dup, idx, note) => {
+    setSettling(idx);
+    try {
+      const res = await fetch(`${EMP_API}/forms/admin/settle-duplicate`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerNumber: dup._id.customerNumber,
+          customerName:   dup.customerNames[0] || '',
+          product:        dup._id.formFillingFor,
+          employees:      dup.employees,
+          note:           note || '',
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setNotifySnack('✓ Duplicate marked as settled. Record saved to history.');
+        load(); // refresh to remove from active list
+      } else {
+        setNotifySnack(`Error: ${data.message}`);
+      }
+    } catch {
+      setNotifySnack('Failed to settle. Please try again.');
+    } finally {
+      setSettling(null);
+    }
+  }, []);
 
   const handleNotify = useCallback(async (dup, idx) => {
     setNotifying(idx);
@@ -542,7 +647,8 @@ export default function MerchantForms() {
       )}
 
       <DuplicatePanel duplicates={duplicates} open={dupOpen} onClose={() => setDupOpen(false)}
-        onNotify={handleNotify} notifying={notifying} />
+        onNotify={handleNotify} notifying={notifying}
+        onSettle={handleSettle} settling={settling} />
 
       <Snackbar open={!!notifySnack} autoHideDuration={4000} onClose={() => setNotifySnack('')}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>

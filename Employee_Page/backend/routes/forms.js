@@ -100,7 +100,12 @@ router.get('/admin/all', async (req, res) => {
 // GET /api/forms/admin/duplicates — merchants submitted by multiple employees (cross-employee duplicates)
 router.get('/admin/duplicates', async (req, res) => {
   try {
-    // Group by customerNumber + formFillingFor — find groups with more than 1 unique employee
+    const DuplicateSettlement = require('../models/DuplicateSettlement');
+
+    // Get all settled phone+product combos to exclude them
+    const settled = await DuplicateSettlement.find({}).lean();
+    const settledKeys = new Set(settled.map(s => `${s.customerNumber}__${s.product}`));
+
     const groups = await FormResponse.aggregate([
       {
         $group: {
@@ -112,10 +117,43 @@ router.get('/admin/duplicates', async (req, res) => {
           records:       { $push: '$$ROOT' },
         }
       },
-      { $match: { 'employeeIds.1': { $exists: true } } }, // more than 1 unique employee
+      { $match: { 'employeeIds.1': { $exists: true } } },
       { $sort: { count: -1 } }
     ]);
-    res.json(groups);
+
+    // Filter out settled duplicates
+    const active = groups.filter(g => !settledKeys.has(`${g._id.customerNumber}__${g._id.formFillingFor}`));
+    res.json(active);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// POST /api/forms/admin/settle-duplicate — admin marks a duplicate as settled
+router.post('/admin/settle-duplicate', async (req, res) => {
+  try {
+    const DuplicateSettlement = require('../models/DuplicateSettlement');
+    const { customerNumber, customerName, product, employees, note } = req.body;
+    if (!customerNumber) return res.status(400).json({ message: 'customerNumber required' });
+
+    // Upsert — if already settled, update the record
+    await DuplicateSettlement.findOneAndUpdate(
+      { customerNumber, product },
+      { customerNumber, customerName, product, employees, note: note || '', settledAt: new Date() },
+      { upsert: true, new: true }
+    );
+    res.json({ message: 'Duplicate marked as settled' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// GET /api/forms/admin/settlements — all settled duplicate records
+router.get('/admin/settlements', async (req, res) => {
+  try {
+    const DuplicateSettlement = require('../models/DuplicateSettlement');
+    const settlements = await DuplicateSettlement.find({}).sort({ settledAt: -1 }).lean();
+    res.json(settlements);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
