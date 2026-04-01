@@ -27,8 +27,13 @@ app.get('*', (req, res) => {
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('✅ MongoDB connected to CompanyDB');
-    app.listen(process.env.PORT || 5000, () => {
-      console.log(`🚀 Server running on http://localhost:${process.env.PORT || 5000}`);
-    });
+    // Only listen when running locally (not on Vercel)
+    if (process.env.VERCEL !== '1') {
+      app.listen(process.env.PORT || 5000, () => {
+        console.log(`🚀 Server running on http://localhost:${process.env.PORT || 5000}`);
+      });
+    }
   })
   .catch(err => console.error('❌ MongoDB error:', err));
+
+module.exports = app;
