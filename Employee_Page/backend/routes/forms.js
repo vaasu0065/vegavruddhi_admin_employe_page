@@ -102,9 +102,10 @@ router.get('/admin/duplicates', async (req, res) => {
   try {
     const DuplicateSettlement = require('../models/DuplicateSettlement');
 
-    // Get all settled phone+product combos to exclude them
+    // Get all settled phone+product combos to mark them (NOT exclude)
     const settled = await DuplicateSettlement.find({}).lean();
-    const settledKeys = new Set(settled.map(s => `${s.customerNumber}__${s.product}`));
+    const settledMap = {};
+    settled.forEach(s => { settledMap[`${s.customerNumber}__${s.product}`] = s; });
 
     const groups = await FormResponse.aggregate([
       {
@@ -121,9 +122,14 @@ router.get('/admin/duplicates', async (req, res) => {
       { $sort: { count: -1 } }
     ]);
 
-    // Filter out settled duplicates
-    const active = groups.filter(g => !settledKeys.has(`${g._id.customerNumber}__${g._id.formFillingFor}`));
-    res.json(active);
+    // Attach settlement info to each group
+    const result = groups.map(g => {
+      const key        = `${g._id.customerNumber}__${g._id.formFillingFor}`;
+      const settlement = settledMap[key] || null;
+      return { ...g, settled: !!settlement, settlementInfo: settlement };
+    });
+
+    res.json(result);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

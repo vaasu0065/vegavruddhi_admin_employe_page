@@ -221,7 +221,7 @@ function DuplicatePanel({ duplicates, open, onClose, onNotify, notifying, onSett
         <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ minHeight: 40,
           '& .MuiTab-root': { fontWeight: 700, fontSize: 12, minHeight: 40 },
           '& .MuiTabs-indicator': { bgcolor: BRAND.primary } }}>
-          <Tab value="active"  label={`Active (${duplicates.length})`} />
+          <Tab value="active"  label={`Active (${duplicates.filter(d => !d.settled).length}) · Settled (${duplicates.filter(d => d.settled).length})`} />
           <Tab value="settled" label="Settled History" onClick={loadSettlements} />
         </Tabs>
       </Box>
@@ -232,57 +232,72 @@ function DuplicatePanel({ duplicates, open, onClose, onNotify, notifying, onSett
           duplicates.length === 0
             ? <Typography color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>No active cross-employee duplicates.</Typography>
             : duplicates.map((dup, i) => (
-              <Card key={i} sx={{ mb: 2, border: '1.5px solid #ffcdd2', borderRadius: 2 }}>
+              <Card key={i} sx={{ mb: 2, border: `1.5px solid ${dup.settled ? '#a5d6a7' : '#ffcdd2'}`, borderRadius: 2,
+                bgcolor: dup.settled ? '#f9fffe' : 'background.paper' }}>
                 <CardContent sx={{ pb: '12px !important' }}>
                   {/* Header row */}
                   <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap', mb: 1 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                      <WarningAmberIcon sx={{ color: '#c62828', fontSize: 18 }} />
-                      <Typography fontWeight={800} sx={{ color: '#c62828' }}>
+                      {dup.settled
+                        ? <Chip label="✓ Settled" size="small" sx={{ bgcolor: '#e6f4ea', color: '#2e7d32', fontWeight: 700 }} />
+                        : <WarningAmberIcon sx={{ color: '#c62828', fontSize: 18 }} />
+                      }
+                      <Typography fontWeight={800} sx={{ color: dup.settled ? '#2e7d32' : '#c62828' }}>
                         {dup.customerNames[0] || dup._id.customerNumber}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">({dup._id.customerNumber})</Typography>
                       <ProductChip product={dup._id.formFillingFor} />
                       <Chip label={`${dup.count} submissions`} size="small" sx={{ bgcolor: '#fdecea', color: '#c62828', fontWeight: 700 }} />
                     </Box>
-                    {/* Action buttons */}
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                      <Tooltip title="Send duplicate alert notification to both employees">
-                        <Button size="small" variant="outlined"
-                          disabled={notifying === i}
-                          startIcon={notifying === i ? <CircularProgress size={12} /> : <NotificationsIcon />}
-                          onClick={() => onNotify(dup, i)}
-                          sx={{ color: '#c62828', borderColor: '#c62828', fontWeight: 700, fontSize: 11,
-                            '&:hover': { bgcolor: '#fdecea' } }}>
-                          {notifying === i ? 'Notifying…' : 'Notify'}
-                        </Button>
-                      </Tooltip>
-                      <Tooltip title="Mark this duplicate as settled — record is kept for history">
-                        <Button size="small" variant="contained"
-                          disabled={settling === i}
-                          startIcon={settling === i ? <CircularProgress size={12} sx={{ color: 'inherit' }} /> : null}
-                          onClick={() => onSettle(dup, i, settleNote[i] || '')}
-                          sx={{ bgcolor: BRAND.primary, fontWeight: 700, fontSize: 11,
-                            '&:hover': { bgcolor: '#0f3320' } }}>
-                          {settling === i ? 'Settling…' : '✓ Mark Settled'}
-                        </Button>
-                      </Tooltip>
-                    </Box>
+                    {/* Action buttons — hide if already settled */}
+                    {!dup.settled && (
+                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                        <Tooltip title="Send duplicate alert notification to both employees">
+                          <Button size="small" variant="outlined"
+                            disabled={notifying === i}
+                            startIcon={notifying === i ? <CircularProgress size={12} /> : <NotificationsIcon />}
+                            onClick={() => onNotify(dup, i)}
+                            sx={{ color: '#c62828', borderColor: '#c62828', fontWeight: 700, fontSize: 11,
+                              '&:hover': { bgcolor: '#fdecea' } }}>
+                            {notifying === i ? 'Notifying…' : 'Notify'}
+                          </Button>
+                        </Tooltip>
+                        <Tooltip title="Mark this duplicate as settled — record is kept for history">
+                          <Button size="small" variant="contained"
+                            disabled={settling === i}
+                            startIcon={settling === i ? <CircularProgress size={12} sx={{ color: 'inherit' }} /> : null}
+                            onClick={() => onSettle(dup, i, settleNote[i] || '')}
+                            sx={{ bgcolor: BRAND.primary, fontWeight: 700, fontSize: 11,
+                              '&:hover': { bgcolor: '#0f3320' } }}>
+                            {settling === i ? 'Settling…' : '✓ Mark Settled'}
+                          </Button>
+                        </Tooltip>
+                      </Box>
+                    )}
                   </Box>
                   <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
                     Customer names used: {dup.customerNames.join(', ')}
                   </Typography>
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1.5 }}>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: dup.settled ? 0 : 1.5 }}>
                     {dup.employees.map((emp, j) => (
-                      <Chip key={j} avatar={<Avatar sx={{ bgcolor: BRAND.primary, fontSize: 11 }}>{initials(emp)}</Avatar>}
+                      <Chip key={j} avatar={<Avatar sx={{ bgcolor: dup.settled ? '#888' : BRAND.primary, fontSize: 11 }}>{initials(emp)}</Avatar>}
                         label={emp} size="small" sx={{ fontWeight: 600 }} />
                     ))}
                   </Box>
-                  {/* Optional note */}
-                  <TextField size="small" fullWidth placeholder="Add settlement note (optional)…"
-                    value={settleNote[i] || ''}
-                    onChange={e => setSettleNote(prev => ({ ...prev, [i]: e.target.value }))}
-                    sx={{ '& .MuiOutlinedInput-root': { fontSize: 12 } }} />
+                  {/* Settlement info */}
+                  {dup.settled && dup.settlementInfo && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                      Settled on {new Date(dup.settlementInfo.settledAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {dup.settlementInfo.note ? ` · ${dup.settlementInfo.note}` : ''}
+                    </Typography>
+                  )}
+                  {/* Note field — only for unsettled */}
+                  {!dup.settled && (
+                    <TextField size="small" fullWidth placeholder="Add settlement note (optional)…"
+                      value={settleNote[i] || ''}
+                      onChange={e => setSettleNote(prev => ({ ...prev, [i]: e.target.value }))}
+                      sx={{ '& .MuiOutlinedInput-root': { fontSize: 12 } }} />
+                  )}
                 </CardContent>
               </Card>
             ))
@@ -588,8 +603,7 @@ export default function MerchantForms() {
         {[
           { label: 'Total Submissions', value: forms.length,   color: BRAND.primary, bg: '#e6f4ea', key: 'total' },
           { label: 'Employees',         value: grouped.length, color: '#1565c0',     bg: '#e3f2fd', key: 'emp' },
-          { label: 'Cross Duplicates',  value: totalDupCount,  color: '#c62828',     bg: '#fdecea', key: 'dup' },
-        ].map(k => (
+          { label: 'Cross Duplicates',  value: totalDupCount,  color: '#c62828',     bg: '#fdecea', key: 'dup' },        ].map(k => (
           <Card key={k.label}
             onClick={k.key === 'dup' && totalDupCount > 0 ? () => setDupOpen(true) : undefined}
             sx={{
