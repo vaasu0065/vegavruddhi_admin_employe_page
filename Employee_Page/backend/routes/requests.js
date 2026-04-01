@@ -60,6 +60,35 @@ router.post('/merchant-delete', verifyToken, async (req, res) => {
   } catch (err) { res.status(500).json({ message: err.message }); }
 });
 
+// POST /api/requests/notify-duplicate — admin notifies both employees about a duplicate merchant
+router.post('/notify-duplicate', async (req, res) => {
+  try {
+    const { employeeNames, merchantName, merchantPhone, product } = req.body;
+    if (!employeeNames || !employeeNames.length) return res.status(400).json({ message: 'employeeNames required' });
+
+    // Find employee IDs by name
+    const employees = await Employee.find({ newJoinerName: { $in: employeeNames } }).select('_id newJoinerName');
+    if (!employees.length) return res.status(404).json({ message: 'No matching employees found' });
+
+    // Create a duplicate_alert notification for each employee
+    const notifications = await Promise.all(employees.map(emp => {
+      const others = employees.filter(e => e._id.toString() !== emp._id.toString()).map(e => e.newJoinerName);
+      return ChangeRequest.create({
+        type:                   'duplicate_alert',
+        employeeId:             emp._id,
+        employeeName:           emp.newJoinerName,
+        duplicateMerchantName:  merchantName,
+        duplicateMerchantPhone: merchantPhone,
+        duplicateOtherEmployee: others.join(', '),
+        status:                 'approved', // show immediately as a notification
+        acknowledged:           false,
+      });
+    }));
+
+    res.json({ message: `Notified ${notifications.length} employee(s)`, count: notifications.length });
+  } catch (err) { res.status(500).json({ message: err.message }); }
+});
+
 // GET /api/requests/my-notifications — employee checks their approved/rejected requests
 router.get('/my-notifications', verifyToken, async (req, res) => {
   try {

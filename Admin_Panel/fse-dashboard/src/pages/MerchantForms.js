@@ -5,6 +5,7 @@ import {
   TableHead, TableRow, Avatar, Tabs, Tab, Badge, TextField,
   InputAdornment, Dialog, DialogTitle, DialogContent, DialogActions,
   IconButton, Collapse, Menu, MenuItem, ListItemIcon, ListItemText,
+  Snackbar,
 } from '@mui/material';
 import RefreshIcon        from '@mui/icons-material/Refresh';
 import SearchIcon         from '@mui/icons-material/Search';
@@ -188,7 +189,7 @@ function StatusChip({ status }) {
 }
 
 // ── Duplicate Alert Panel ─────────────────────────────────────
-function DuplicatePanel({ duplicates, open, onClose }) {
+function DuplicatePanel({ duplicates, open, onClose, onNotify, notifying }) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#c62828', fontWeight: 800 }}>
@@ -203,14 +204,30 @@ function DuplicatePanel({ duplicates, open, onClose }) {
         ) : duplicates.map((dup, i) => (
           <Card key={i} sx={{ mb: 2, border: '1.5px solid #ffcdd2', borderRadius: 2 }}>
             <CardContent sx={{ pb: '12px !important' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap' }}>
-                <WarningAmberIcon sx={{ color: '#c62828', fontSize: 18 }} />
-                <Typography fontWeight={800} sx={{ color: '#c62828' }}>
-                  {dup._id.customerNumber}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">—</Typography>
-                <ProductChip product={dup._id.formFillingFor} />
-                <Chip label={`${dup.count} submissions`} size="small" sx={{ bgcolor: '#fdecea', color: '#c62828', fontWeight: 700 }} />
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap', mb: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                  <WarningAmberIcon sx={{ color: '#c62828', fontSize: 18 }} />
+                  <Typography fontWeight={800} sx={{ color: '#c62828' }}>
+                    {dup.customerNames[0] || dup._id.customerNumber}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">({dup._id.customerNumber})</Typography>
+                  <ProductChip product={dup._id.formFillingFor} />
+                  <Chip label={`${dup.count} submissions`} size="small" sx={{ bgcolor: '#fdecea', color: '#c62828', fontWeight: 700 }} />
+                </Box>
+                {/* Notify button */}
+                <Tooltip title="Send duplicate alert notification to both employees">
+                  <Button
+                    size="small"
+                    variant="contained"
+                    disabled={notifying === i}
+                    startIcon={notifying === i ? <CircularProgress size={12} sx={{ color: 'inherit' }} /> : <NotificationsIcon />}
+                    onClick={() => onNotify(dup, i)}
+                    sx={{ bgcolor: '#c62828', fontWeight: 700, fontSize: 11, whiteSpace: 'nowrap',
+                      '&:hover': { bgcolor: '#b71c1c' } }}
+                  >
+                    {notifying === i ? 'Notifying…' : 'Notify Employees'}
+                  </Button>
+                </Tooltip>
               </Box>
               <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
                 Customer names used: {dup.customerNames.join(', ')}
@@ -333,6 +350,30 @@ export default function MerchantForms() {
   const [dupOpen,    setDupOpen]    = useState(false);
   const [exporting,  setExporting]  = useState(false);
   const [exportAnchor, setExportAnchor] = useState(null);
+  const [notifying,  setNotifying]  = useState(null); // index of dup being notified
+  const [notifySnack, setNotifySnack] = useState('');
+
+  const handleNotify = useCallback(async (dup, idx) => {
+    setNotifying(idx);
+    try {
+      const res  = await fetch(`${EMP_API}/requests/notify-duplicate`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employeeNames: dup.employees,
+          merchantName:  dup.customerNames[0] || '',
+          merchantPhone: dup._id.customerNumber,
+          product:       dup._id.formFillingFor,
+        }),
+      });
+      const data = await res.json();
+      setNotifySnack(res.ok ? `✓ Notified ${data.count} employee(s) about the duplicate.` : `Error: ${data.message}`);
+    } catch {
+      setNotifySnack('Failed to send notification. Please try again.');
+    } finally {
+      setNotifying(null);
+    }
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -440,14 +481,31 @@ export default function MerchantForms() {
       {/* Summary KPIs */}
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, mb: 3 }}>
         {[
-          { label: 'Total Submissions', value: forms.length,       color: BRAND.primary, bg: '#e6f4ea' },
-          { label: 'Employees',         value: grouped.length,     color: '#1565c0',     bg: '#e3f2fd' },
-          { label: 'Cross Duplicates',  value: totalDupCount,      color: '#c62828',     bg: '#fdecea' },
+          { label: 'Total Submissions', value: forms.length,   color: BRAND.primary, bg: '#e6f4ea', key: 'total' },
+          { label: 'Employees',         value: grouped.length, color: '#1565c0',     bg: '#e3f2fd', key: 'emp' },
+          { label: 'Cross Duplicates',  value: totalDupCount,  color: '#c62828',     bg: '#fdecea', key: 'dup' },
         ].map(k => (
-          <Card key={k.label} sx={{ borderRadius: 3, border: `1.5px solid ${k.color}20` }}>
+          <Card key={k.label}
+            onClick={k.key === 'dup' && totalDupCount > 0 ? () => setDupOpen(true) : undefined}
+            sx={{
+              borderRadius: 3,
+              border: `1.5px solid ${k.color}20`,
+              cursor: k.key === 'dup' && totalDupCount > 0 ? 'pointer' : 'default',
+              transition: 'box-shadow 0.2s, transform 0.15s',
+              ...(k.key === 'dup' && totalDupCount > 0 && {
+                '&:hover': { boxShadow: '0 4px 20px rgba(198,40,40,0.18)', transform: 'translateY(-2px)' }
+              })
+            }}>
             <CardContent sx={{ py: 2 }}>
               <Typography variant="h4" fontWeight={800} sx={{ color: k.color }}>{k.value}</Typography>
-              <Typography variant="body2" color="text.secondary" fontWeight={600}>{k.label}</Typography>
+              <Typography variant="body2" color="text.secondary" fontWeight={600}>
+                {k.label}
+                {k.key === 'dup' && totalDupCount > 0 && (
+                  <Typography component="span" variant="caption" sx={{ ml: 1, color: '#c62828', fontWeight: 700 }}>
+                    (click to view)
+                  </Typography>
+                )}
+              </Typography>
             </CardContent>
           </Card>
         ))}
@@ -483,7 +541,16 @@ export default function MerchantForms() {
         ))
       )}
 
-      <DuplicatePanel duplicates={duplicates} open={dupOpen} onClose={() => setDupOpen(false)} />
+      <DuplicatePanel duplicates={duplicates} open={dupOpen} onClose={() => setDupOpen(false)}
+        onNotify={handleNotify} notifying={notifying} />
+
+      <Snackbar open={!!notifySnack} autoHideDuration={4000} onClose={() => setNotifySnack('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <Alert severity={notifySnack.startsWith('✓') ? 'success' : 'error'} variant="filled"
+          onClose={() => setNotifySnack('')}>
+          {notifySnack}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

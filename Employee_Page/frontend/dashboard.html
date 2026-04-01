@@ -390,6 +390,21 @@
         var banner  = document.getElementById('posReqBanner');
         if (!unacked.length) { banner.style.display = 'none'; return; }
         banner.innerHTML = unacked.map(function(req) {
+          // ── Duplicate alert notification ──
+          if (req.type === 'duplicate_alert') {
+            return '<div style="background:#fff3e0;border:1.5px solid #ffb74d;border-radius:12px;padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;">'
+              + '<div style="display:flex;align-items:center;gap:12px;">'
+              + '<span style="font-size:20px;">⚠️</span>'
+              + '<div><div style="font-size:14px;font-weight:700;color:#e65100;font-family:var(--font);">Duplicate Merchant Detected</div>'
+              + '<div style="font-size:12px;color:#bf360c;margin-top:3px;font-family:var(--font);">'
+              + 'Merchant <b>' + (req.duplicateMerchantName || req.duplicateMerchantPhone) + '</b>'
+              + (req.duplicateMerchantPhone ? ' (' + req.duplicateMerchantPhone + ')' : '')
+              + ' was also submitted by <b>' + (req.duplicateOtherEmployee || 'another employee') + '</b>.'
+              + ' Please coordinate with your team.</div></div></div>'
+              + '<button onclick="acknowledgeRequest(\'' + req._id + '\', this)" style="padding:6px 16px;background:#e65100;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);white-space:nowrap;">Got it</button>'
+              + '</div>';
+          }
+          // ── Regular request notification ──
           var isApproved = req.status === 'approved';
           var typeLabel  = req.type === 'profile_change' ? 'Profile Change'
                          : req.type === 'merchant_edit'  ? 'Merchant Edit'
