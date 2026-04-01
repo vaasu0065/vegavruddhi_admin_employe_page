@@ -509,6 +509,7 @@ export default function MerchantForms() {
   const [error,      setError]      = useState('');
   const [search,     setSearch]     = useState('');
   const [dupOpen,    setDupOpen]    = useState(false);
+  const [settledOpen,setSettledOpen]= useState(false);
   const [exporting,  setExporting]  = useState(false);
   const [exportAnchor, setExportAnchor] = useState(null);
   const [notifying,  setNotifying]  = useState(null); // index of dup being notified
@@ -651,6 +652,8 @@ export default function MerchantForms() {
   }, [forms, search]);
 
   const totalDupCount = duplicates.length;
+  const settledCount  = duplicates.filter(d => d.settled).length;
+  const activeCount   = totalDupCount - settledCount;
 
   // Map empName → points data
   const empPointsMap = useMemo(() => {
@@ -716,28 +719,33 @@ export default function MerchantForms() {
       </Box>
 
       {/* Summary KPIs */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, mb: 3 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, mb: 3 }}>
         {[
           { label: 'Total Submissions', value: forms.length,   color: BRAND.primary, bg: '#e6f4ea', key: 'total' },
           { label: 'Employees',         value: grouped.length, color: '#1565c0',     bg: '#e3f2fd', key: 'emp' },
-          { label: 'Cross Duplicates',  value: totalDupCount,  color: '#c62828',     bg: '#fdecea', key: 'dup' },        ].map(k => (
+          { label: 'Cross Duplicates',  value: activeCount,    color: '#c62828',     bg: '#fdecea', key: 'dup' },
+          { label: 'Settled Duplicates',value: settledCount,   color: '#2e7d32',     bg: '#e6f4ea', key: 'settled' },
+        ].map(k => (
           <Card key={k.label}
-            onClick={k.key === 'dup' && totalDupCount > 0 ? () => setDupOpen(true) : undefined}
+            onClick={
+              k.key === 'dup'     && activeCount   > 0 ? () => setDupOpen(true)     :
+              k.key === 'settled' && settledCount  > 0 ? () => setSettledOpen(true) :
+              undefined
+            }
             sx={{
               borderRadius: 3,
               border: `1.5px solid ${k.color}20`,
-              cursor: k.key === 'dup' && totalDupCount > 0 ? 'pointer' : 'default',
+              cursor: (k.key === 'dup' && activeCount > 0) || (k.key === 'settled' && settledCount > 0) ? 'pointer' : 'default',
               transition: 'box-shadow 0.2s, transform 0.15s',
-              ...(k.key === 'dup' && totalDupCount > 0 && {
-                '&:hover': { boxShadow: '0 4px 20px rgba(198,40,40,0.18)', transform: 'translateY(-2px)' }
-              })
+              ...((k.key === 'dup' && activeCount > 0) && { '&:hover': { boxShadow: '0 4px 20px rgba(198,40,40,0.18)', transform: 'translateY(-2px)' } }),
+              ...((k.key === 'settled' && settledCount > 0) && { '&:hover': { boxShadow: '0 4px 20px rgba(46,125,50,0.18)', transform: 'translateY(-2px)' } }),
             }}>
             <CardContent sx={{ py: 2 }}>
               <Typography variant="h4" fontWeight={800} sx={{ color: k.color }}>{k.value}</Typography>
               <Typography variant="body2" color="text.secondary" fontWeight={600}>
                 {k.label}
-                {k.key === 'dup' && totalDupCount > 0 && (
-                  <Typography component="span" variant="caption" sx={{ ml: 1, color: '#c62828', fontWeight: 700 }}>
+                {((k.key === 'dup' && activeCount > 0) || (k.key === 'settled' && settledCount > 0)) && (
+                  <Typography component="span" variant="caption" sx={{ ml: 1, color: k.color, fontWeight: 700 }}>
                     (click to view)
                   </Typography>
                 )}
@@ -748,10 +756,10 @@ export default function MerchantForms() {
       </Box>
 
       {/* Duplicate warning banner */}
-      {totalDupCount > 0 && (
+      {activeCount > 0 && (
         <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}
           action={<Button size="small" color="inherit" fontWeight={700} onClick={() => setDupOpen(true)}>View All</Button>}>
-          <strong>{totalDupCount} cross-employee duplicate merchant(s) detected.</strong> Same merchant submitted by multiple employees.
+          <strong>{activeCount} cross-employee duplicate merchant(s) detected.</strong> Same merchant submitted by multiple employees.
         </Alert>
       )}
 
@@ -818,6 +826,55 @@ export default function MerchantForms() {
             sx={{ bgcolor: BRAND.primary, fontWeight: 700 }}>
             {editPtsSaving ? 'Saving…' : 'Save Points'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Settled Duplicates Dialog */}
+      <Dialog open={settledOpen} onClose={() => setSettledOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: BRAND.primary, fontWeight: 800 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            ✓ Settled Duplicate Records ({settledCount})
+          </Box>
+          <IconButton onClick={() => setSettledOpen(false)} size="small"><CloseIcon /></IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 2 }}>
+          {duplicates.filter(d => d.settled).length === 0
+            ? <Typography color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>No settled duplicates yet.</Typography>
+            : duplicates.filter(d => d.settled).map((dup, i) => (
+              <Card key={i} sx={{ mb: 2, border: `1.5px solid ${BRAND.primaryLight || '#c8e6c9'}`, borderRadius: 2 }}>
+                <CardContent sx={{ pb: '12px !important' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 1 }}>
+                    <Chip label="✓ Settled" size="small" sx={{ bgcolor: '#e6f4ea', color: '#2e7d32', fontWeight: 700 }} />
+                    <Typography fontWeight={800} sx={{ color: BRAND.primary }}>{dup.customerNames[0] || dup._id.customerNumber}</Typography>
+                    <Typography variant="caption" color="text.secondary">({dup._id.customerNumber})</Typography>
+                    <ProductChip product={dup._id.formFillingFor} />
+                    <Chip label={`${dup.count} submissions`} size="small" sx={{ bgcolor: '#e6f4ea', color: '#2e7d32', fontWeight: 700 }} />
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
+                    {dup.employees.map((emp, j) => (
+                      <Chip key={j} avatar={<Avatar sx={{ bgcolor: '#888', fontSize: 11 }}>{initials(emp)}</Avatar>}
+                        label={emp} size="small" sx={{ fontWeight: 600 }} />
+                    ))}
+                  </Box>
+                  {dup.settlementInfo && (
+                    <Box sx={{ bgcolor: '#f9fffe', borderRadius: 1.5, p: 1.5, border: '1px solid #c8e6c9' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        Settled on {new Date(dup.settlementInfo.settledAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </Typography>
+                      {dup.settlementInfo.note && (
+                        <Typography variant="caption" sx={{ color: BRAND.primary, fontWeight: 600, display: 'block', mt: 0.5 }}>
+                          Note: {dup.settlementInfo.note}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          }
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSettledOpen(false)} sx={{ color: BRAND.primary, fontWeight: 700 }}>Close</Button>
         </DialogActions>
       </Dialog>
 
