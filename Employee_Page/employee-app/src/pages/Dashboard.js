@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { API_BASE } from '../api';
 import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -35,7 +36,7 @@ export default function Dashboard() {
 
   // Load profile
   useEffect(() => {
-    fetch('/api/auth/profile', { headers: { Authorization: 'Bearer ' + token } })
+    fetch(`${API_BASE}/api/auth/profile', { headers: { Authorization: 'Bearer ' + token } })
       .then(r => { if (r.status === 401) { localStorage.clear(); navigate('/'); } return r.json(); })
       .then(setEmp)
       .catch(console.error);
@@ -43,7 +44,7 @@ export default function Dashboard() {
 
   // Load forms
   const loadForms = useCallback(() => {
-    fetch('/api/forms/my', { headers: { Authorization: 'Bearer ' + token } })
+    fetch(`${API_BASE}/api/forms/my', { headers: { Authorization: 'Bearer ' + token } })
       .then(r => r.json()).then(setAllForms).catch(console.error);
   }, [token]);
 
@@ -51,13 +52,13 @@ export default function Dashboard() {
 
   // Load points adjustment
   useEffect(() => {
-    fetch('/api/forms/my-points', { headers: { Authorization: 'Bearer ' + token } })
+    fetch(`${API_BASE}/api/forms/my-points', { headers: { Authorization: 'Bearer ' + token } })
       .then(r => r.json()).then(d => setAdjustment(d.pointsAdjustment || 0)).catch(() => {});
   }, [token]);
 
   // Load notifications
   const loadNotifications = useCallback(() => {
-    fetch('/api/requests/my-notifications', { headers: { Authorization: 'Bearer ' + token } })
+    fetch(`${API_BASE}/api/requests/my-notifications', { headers: { Authorization: 'Bearer ' + token } })
       .then(r => r.json()).then(data => setNotifications(data.filter(n => !n.acknowledged)))
       .catch(() => {});
   }, [token]);
@@ -69,7 +70,7 @@ export default function Dashboard() {
   }, [loadNotifications]);
 
   const acknowledge = async (id) => {
-    await fetch(`/api/requests/${id}/acknowledge`, { method: 'PUT', headers: { Authorization: 'Bearer ' + token } });
+    await fetch(`${API_BASE}/api/requests/${id}/acknowledge`, { method: 'PUT', headers: { Authorization: 'Bearer ' + token } });
     setNotifications(prev => prev.filter(n => n._id !== id));
   };
 
@@ -109,7 +110,7 @@ export default function Dashboard() {
     const phones   = filtered.map(f => f.customerNumber).join(',');
     const names    = filtered.map(f => encodeURIComponent(f.customerName)).join(',');
     const products = filtered.map(f => encodeURIComponent(f.formFillingFor || '')).join(',');
-    fetch(`/api/verify/bulk?phones=${encodeURIComponent(phones)}&names=${names}&products=${products}`, {
+    fetch(`${API_BASE}/api/verify/bulk?phones=${encodeURIComponent(phones)}&names=${names}&products=${products}`, {
       headers: { Authorization: 'Bearer ' + token }
     })
       .then(r => r.json())
@@ -120,7 +121,7 @@ export default function Dashboard() {
         allForms.forEach(f => {
           if (vm[f.customerNumber]?.status === 'Fully Verified') autoPts += POINTS_MAP[f.formFillingFor] || 0;
         });
-        fetch('/api/forms/save-verified-points', {
+        fetch(`${API_BASE}/api/forms/save-verified-points', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
           body: JSON.stringify({ verifiedPoints: Math.round(autoPts * 10) / 10 })

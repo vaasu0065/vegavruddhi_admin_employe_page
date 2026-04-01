@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { API_BASE } from '../api';
 
 const GOOGLE_CLIENT_ID = '175231524136-39m136pat1dpous6u9eijhfulpmpms1i.apps.googleusercontent.com';
 
@@ -35,7 +36,7 @@ export default function Login() {
   const onCredential = async (response) => {
     setLoading(true);
     try {
-      const res  = await fetch('/api/auth/google-login', {
+      const res  = await fetch(`${API_BASE}/api/auth/google-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential: response.credential }),
