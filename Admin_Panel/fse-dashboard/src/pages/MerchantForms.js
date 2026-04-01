@@ -351,10 +351,42 @@ function DuplicatePanel({ duplicates, open, onClose, onNotify, notifying, onSett
   );
 }
 
+// ── Verification status chip ──────────────────────────────────
+function VerifyChip({ status }) {
+  const map = {
+    'Fully Verified': { bg: '#e6f4ea', color: '#2e7d32', icon: '✓' },
+    'Partially Done': { bg: '#fff8e1', color: '#f57f17', icon: '◑' },
+    'Not Verified':   { bg: '#fdecea', color: '#c62828', icon: '✗' },
+    'Not Found':      { bg: '#f5f5f5', color: '#888',    icon: '–' },
+  };
+  const s = map[status] || map['Not Found'];
+  return (
+    <Chip label={`${s.icon} ${status || 'Not Found'}`} size="small"
+      sx={{ bgcolor: s.bg, color: s.color, fontWeight: 700, fontSize: 11, border: `1px solid ${s.color}30` }} />
+  );
+}
+
 // ── Employee Group Row ────────────────────────────────────────
 function EmployeeGroup({ empName, forms, duplicatePhones, empPointsData, onEditPoints }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded,   setExpanded]   = useState(false);
+  const [verifyMap,  setVerifyMap]  = useState({});
+  const [verifying,  setVerifying]  = useState(false);
   const dupCount = forms.filter(f => duplicatePhones.has(f.customerNumber)).length;
+
+  // Fetch verification status when expanded
+  const fetchVerification = useCallback(async () => {
+    if (verifying || Object.keys(verifyMap).length > 0) return;
+    setVerifying(true);
+    try {
+      const phones   = forms.map(f => f.customerNumber).join(',');
+      const names    = forms.map(f => encodeURIComponent(f.customerName)).join(',');
+      const products = forms.map(f => encodeURIComponent(f.formFillingFor || '')).join(',');
+      const res = await fetch(
+        `${EMP_API}/verify/bulk?phones=${encodeURIComponent(phones)}&names=${names}&products=${products}`
+      );
+      if (res.ok) setVerifyMap(await res.json());
+    } catch { /* ignore */ } finally { setVerifying(false); }
+  }, [forms, verifyMap, verifying]);
 
   // Admin can't know verification status — show only adjustment + note
   const adjustment  = empPointsData?.pointsAdjustment || 0;
@@ -364,7 +396,11 @@ function EmployeeGroup({ empName, forms, duplicatePhones, empPointsData, onEditP
   return (
     <Card sx={{ mb: 2, border: `1.5px solid ${BRAND.primaryLight || '#c8e6c9'}`, borderRadius: 2 }}>
       <Box
-        onClick={() => setExpanded(p => !p)}
+        onClick={() => {
+          const next = !expanded;
+          setExpanded(next);
+          if (next) fetchVerification();
+        }}
         sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           px: 2.5, py: 1.5, cursor: 'pointer',
           '&:hover': { bgcolor: 'action.hover' }, borderRadius: 2 }}
@@ -411,6 +447,7 @@ function EmployeeGroup({ empName, forms, duplicatePhones, empPointsData, onEditP
                 <TableCell>Location</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Product</TableCell>
+                <TableCell>Verification</TableCell>
                 <TableCell>Date</TableCell>
                 <TableCell align="center">Dup?</TableCell>
               </TableRow>
@@ -433,6 +470,12 @@ function EmployeeGroup({ empName, forms, duplicatePhones, empPointsData, onEditP
                       {f.formFillingFor
                         ? <ProductChip product={f.formFillingFor} />
                         : <Typography variant="caption" color="text.secondary">{(f.attemptedProducts || []).join(', ') || '–'}</Typography>
+                      }
+                    </TableCell>
+                    <TableCell>
+                      {verifying
+                        ? <CircularProgress size={12} sx={{ color: BRAND.primary }} />
+                        : <VerifyChip status={verifyMap[f.customerNumber]?.status} />
                       }
                     </TableCell>
                     <TableCell>
