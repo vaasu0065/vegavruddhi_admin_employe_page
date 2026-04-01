@@ -411,14 +411,12 @@ function EmployeeGroup({ empName, forms, duplicatePhones, empPointsData, onEditP
                 <TableCell>Status</TableCell>
                 <TableCell>Product</TableCell>
                 <TableCell>Date</TableCell>
-                <TableCell align="center">Points</TableCell>
                 <TableCell align="center">Dup?</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {forms.map(f => {
                 const isDup = duplicatePhones.has(f.customerNumber);
-                const pts   = POINTS_MAP[f.formFillingFor];
                 return (
                   <TableRow key={f._id} hover
                     sx={{ bgcolor: isDup ? '#fff8f8' : 'transparent', '&:last-child td': { border: 0 } }}>
@@ -440,13 +438,6 @@ function EmployeeGroup({ empName, forms, duplicatePhones, empPointsData, onEditP
                       <Typography variant="caption" color="text.secondary">
                         {new Date(f.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      {pts !== undefined
-                        ? <Chip label={`⭐ ${pts}`} size="small"
-                            sx={{ bgcolor: '#fff8e1', color: '#e76f51', fontWeight: 700, fontSize: 11, border: '1px solid #f4a261' }} />
-                        : <Typography variant="caption" color="text.secondary">–</Typography>
-                      }
                     </TableCell>
                     <TableCell align="center">
                       {isDup && (
