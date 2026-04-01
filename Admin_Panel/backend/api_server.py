@@ -348,7 +348,12 @@ def get_sheet_client():
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/drive"
     ]
-    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+    creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
+    if creds_json:
+        import json
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(json.loads(creds_json), scope)
+    else:
+        creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
     client = gspread.authorize(creds)
     return client.open("VV - Day Working (Responses)").worksheet("FSE")
 

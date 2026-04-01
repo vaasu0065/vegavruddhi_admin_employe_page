@@ -1,4 +1,6 @@
 import re
+import os
+import json
 import calendar
 import gspread
 import pandas as pd
@@ -14,7 +16,12 @@ def _get_client():
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/drive"
     ]
-    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+    # Support env var for deployment (Vercel etc.)
+    creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
+    if creds_json:
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(json.loads(creds_json), scope)
+    else:
+        creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
     return gspread.authorize(creds)
 
 
