@@ -486,6 +486,25 @@ export default function MerchantForms() {
   const [editPtsValue, setEditPtsValue] = useState('');
   const [editPtsSaving,setEditPtsSaving]= useState(false);
 
+  const load = useCallback(async () => {
+    setLoading(true); setError('');
+    try {
+      const [formsRes, dupRes, ptsRes] = await Promise.all([
+        fetch(`${EMP_API}/forms/admin/all`),
+        fetch(`${EMP_API}/forms/admin/duplicates`),
+        fetch(`${EMP_API}/forms/admin/employee-points`),
+      ]);
+      if (!formsRes.ok) throw new Error('Failed to load merchant forms');
+      setForms(await formsRes.json());
+      setDuplicates(dupRes.ok ? await dupRes.json() : []);
+      setEmpPoints(ptsRes.ok ? await ptsRes.json() : []);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const handleSettle = useCallback(async (dup, idx, note) => {    setSettling(idx);
     try {
       const res = await fetch(`${EMP_API}/forms/admin/settle-duplicate`, {
@@ -566,25 +585,6 @@ export default function MerchantForms() {
       setNotifySnack('Failed to send notification. Please try again.');
     } finally {
       setNotifying(null);
-    }
-  }, []);
-
-  const load = useCallback(async () => {
-    setLoading(true); setError('');
-    try {
-      const [formsRes, dupRes, ptsRes] = await Promise.all([
-        fetch(`${EMP_API}/forms/admin/all`),
-        fetch(`${EMP_API}/forms/admin/duplicates`),
-        fetch(`${EMP_API}/forms/admin/employee-points`),
-      ]);
-      if (!formsRes.ok) throw new Error('Failed to load merchant forms');
-      setForms(await formsRes.json());
-      setDuplicates(dupRes.ok ? await dupRes.json() : []);
-      setEmpPoints(ptsRes.ok ? await ptsRes.json() : []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
     }
   }, []);
 
