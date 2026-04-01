@@ -13,6 +13,7 @@ const employeeSchema = new mongoose.Schema({
   password:           { type: String, required: true },
   status:             { type: String, default: 'Active', enum: ['Active', 'Inactive', 'On Leave'] },
   approvalStatus:     { type: String, default: 'pending', enum: ['pending', 'approved', 'rejected'] },
+  pointsAdjustment:   { type: Number, default: 0 },  // admin manual +/- adjustment
   createdAt:          { type: Date, default: Date.now }
 }, { collection: 'Users' });
 

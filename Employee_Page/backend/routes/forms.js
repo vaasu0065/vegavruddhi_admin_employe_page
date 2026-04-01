@@ -165,4 +165,63 @@ router.get('/admin/settlements', async (req, res) => {
   }
 });
 
+// ── POINTS SYSTEM ────────────────────────────────────────────
+
+const POINTS_MAP = {
+  'Tide':             2,
+  'MSME':             0.3,
+  'Insurance':        1,
+  'Tide Credit Card': 1,
+};
+
+// GET /api/forms/admin/employee-points — all employees with auto + adjusted points
+router.get('/admin/employee-points', async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    const Employee = require('../models/Employee');
+
+    // Get all fully-verified forms grouped by employee
+    // We can't know verification status server-side (it's checked via external sheet),
+    // so we return all forms and let the client calculate auto-points,
+    // but we store admin adjustments in Employee.pointsAdjustment
+    const employees = await Employee.find({ approvalStatus: 'approved' })
+      .select('_id newJoinerName pointsAdjustment').lean();
+
+    res.json(employees);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// PUT /api/forms/admin/adjust-points/:employeeId — admin adds/subtracts points
+router.put('/admin/adjust-points/:employeeId', async (req, res) => {
+  try {
+    const Employee = require('../models/Employee');
+    const { adjustment } = req.body; // can be positive or negative
+    if (adjustment === undefined) return res.status(400).json({ message: 'adjustment required' });
+
+    const emp = await Employee.findByIdAndUpdate(
+      req.params.employeeId,
+      { $inc: { pointsAdjustment: Number(adjustment) } },
+      { new: true }
+    ).select('newJoinerName pointsAdjustment');
+
+    if (!emp) return res.status(404).json({ message: 'Employee not found' });
+    res.json({ message: 'Points updated', employee: emp });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// GET /api/forms/my-points — employee gets their own points adjustment
+router.get('/my-points', verifyToken, async (req, res) => {
+  try {
+    const Employee = require('../models/Employee');
+    const emp = await Employee.findById(req.user.id).select('pointsAdjustment').lean();
+    res.json({ pointsAdjustment: emp?.pointsAdjustment || 0 });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;

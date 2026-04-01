@@ -17,6 +17,7 @@ import CloseIcon          from '@mui/icons-material/Close';
 import DownloadIcon       from '@mui/icons-material/Download';
 import TableChartIcon     from '@mui/icons-material/TableChart';
 import GridOnIcon         from '@mui/icons-material/GridOn';
+import EditIcon           from '@mui/icons-material/Edit';
 import * as XLSX          from 'xlsx';
 import { BRAND }          from '../theme';
 
@@ -143,6 +144,16 @@ async function exportToGoogleSheets(forms, setExporting, setError) {
     setError('Export failed: ' + err.message);
     setExporting(false);
   }
+}
+
+// ── Points calculation (client-side, mirrors backend POINTS_MAP) ─
+const POINTS_MAP = { 'Tide': 2, 'MSME': 0.3, 'Insurance': 1, 'Tide Credit Card': 1 };
+
+function calcAutoPoints(forms, verifiedPhones) {
+  return forms.reduce((sum, f) => {
+    if (verifiedPhones.has(f.customerNumber)) sum += POINTS_MAP[f.formFillingFor] || 0;
+    return sum;
+  }, 0);
 }
 
 const EMP_API = process.env.REACT_APP_EMPLOYEE_API_URL || 'http://localhost:4000/api';
@@ -341,9 +352,14 @@ function DuplicatePanel({ duplicates, open, onClose, onNotify, notifying, onSett
 }
 
 // ── Employee Group Row ────────────────────────────────────────
-function EmployeeGroup({ empName, forms, duplicatePhones }) {
+function EmployeeGroup({ empName, forms, duplicatePhones, empPointsData, onEditPoints }) {
   const [expanded, setExpanded] = useState(false);
   const dupCount = forms.filter(f => duplicatePhones.has(f.customerNumber)).length;
+
+  // Auto points from fully-verified merchants (we don't have verifiedMap here, show product-based estimate)
+  const autoPoints = forms.reduce((sum, f) => sum + (POINTS_MAP[f.formFillingFor] || 0), 0);
+  const adjustment = empPointsData?.pointsAdjustment || 0;
+  const totalPoints = Math.round((autoPoints + adjustment) * 10) / 10;
 
   return (
     <Card sx={{ mb: 2, border: `1.5px solid ${BRAND.primaryLight || '#c8e6c9'}`, borderRadius: 2 }}>
@@ -363,6 +379,17 @@ function EmployeeGroup({ empName, forms, duplicatePhones }) {
           </Box>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* Points badge */}
+          <Tooltip title={`Auto: ${Math.round(autoPoints*10)/10} pts + Adjustment: ${adjustment >= 0 ? '+' : ''}${adjustment} = ${totalPoints} pts`}>
+            <Chip
+              label={`⭐ ${totalPoints} pts`}
+              size="small"
+              onClick={e => { e.stopPropagation(); onEditPoints(empName, empPointsData, autoPoints); }}
+              sx={{ bgcolor: '#fff8e1', color: '#e76f51', fontWeight: 800, fontSize: 11,
+                border: '1.5px solid #f4a261', cursor: 'pointer',
+                '&:hover': { bgcolor: '#ffe0b2' } }}
+            />
+          </Tooltip>
           {dupCount > 0 && (
             <Tooltip title={`${dupCount} merchant(s) also submitted by other employees`}>
               <Chip icon={<WarningAmberIcon sx={{ fontSize: '14px !important' }} />}
@@ -385,12 +412,14 @@ function EmployeeGroup({ empName, forms, duplicatePhones }) {
                 <TableCell>Status</TableCell>
                 <TableCell>Product</TableCell>
                 <TableCell>Date</TableCell>
+                <TableCell align="center">Points</TableCell>
                 <TableCell align="center">Dup?</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {forms.map(f => {
                 const isDup = duplicatePhones.has(f.customerNumber);
+                const pts   = POINTS_MAP[f.formFillingFor];
                 return (
                   <TableRow key={f._id} hover
                     sx={{ bgcolor: isDup ? '#fff8f8' : 'transparent', '&:last-child td': { border: 0 } }}>
@@ -412,6 +441,13 @@ function EmployeeGroup({ empName, forms, duplicatePhones }) {
                       <Typography variant="caption" color="text.secondary">
                         {new Date(f.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </Typography>
+                    </TableCell>
+                    <TableCell align="center">
+                      {pts !== undefined
+                        ? <Chip label={`⭐ ${pts}`} size="small"
+                            sx={{ bgcolor: '#fff8e1', color: '#e76f51', fontWeight: 700, fontSize: 11, border: '1px solid #f4a261' }} />
+                        : <Typography variant="caption" color="text.secondary">–</Typography>
+                      }
                     </TableCell>
                     <TableCell align="center">
                       {isDup && (
@@ -444,9 +480,13 @@ export default function MerchantForms() {
   const [notifying,  setNotifying]  = useState(null); // index of dup being notified
   const [notifySnack, setNotifySnack] = useState('');
   const [settling,   setSettling]   = useState(null); // index of dup being settled
+  const [empPoints,  setEmpPoints]  = useState([]);   // [{_id, newJoinerName, pointsAdjustment}]
+  const [editPtsOpen,  setEditPtsOpen]  = useState(false);
+  const [editPtsEmp,   setEditPtsEmp]   = useState(null); // {empName, empData, autoPoints}
+  const [editPtsValue, setEditPtsValue] = useState('');
+  const [editPtsSaving,setEditPtsSaving]= useState(false);
 
-  const handleSettle = useCallback(async (dup, idx, note) => {
-    setSettling(idx);
+  const handleSettle = useCallback(async (dup, idx, note) => {    setSettling(idx);
     try {
       const res = await fetch(`${EMP_API}/forms/admin/settle-duplicate`, {
         method:  'POST',
@@ -473,6 +513,40 @@ export default function MerchantForms() {
     }
   }, []);
 
+  const handleEditPoints = useCallback((empName, empData, autoPoints) => {
+    setEditPtsEmp({ empName, empData, autoPoints });
+    setEditPtsValue(empData?.pointsAdjustment !== undefined ? String(empData.pointsAdjustment) : '0');
+    setEditPtsOpen(true);
+  }, []);
+
+  const handleSavePoints = useCallback(async () => {
+    if (!editPtsEmp?.empData?._id) return;
+    setEditPtsSaving(true);
+    try {
+      // Calculate the delta: newAdjustment - currentAdjustment
+      const newAdj     = parseFloat(editPtsValue) || 0;
+      const currentAdj = editPtsEmp.empData.pointsAdjustment || 0;
+      const delta      = newAdj - currentAdj;
+      const res = await fetch(`${EMP_API}/forms/admin/adjust-points/${editPtsEmp.empData._id}`, {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ adjustment: delta }),
+      });
+      if (res.ok) {
+        setNotifySnack(`✓ Points updated for ${editPtsEmp.empName}`);
+        setEditPtsOpen(false);
+        load();
+      } else {
+        const d = await res.json();
+        setNotifySnack(`Error: ${d.message}`);
+      }
+    } catch {
+      setNotifySnack('Failed to update points.');
+    } finally {
+      setEditPtsSaving(false);
+    }
+  }, [editPtsEmp, editPtsValue, load]);
+
   const handleNotify = useCallback(async (dup, idx) => {
     setNotifying(idx);
     try {
@@ -498,13 +572,15 @@ export default function MerchantForms() {
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const [formsRes, dupRes] = await Promise.all([
+      const [formsRes, dupRes, ptsRes] = await Promise.all([
         fetch(`${EMP_API}/forms/admin/all`),
         fetch(`${EMP_API}/forms/admin/duplicates`),
+        fetch(`${EMP_API}/forms/admin/employee-points`),
       ]);
       if (!formsRes.ok) throw new Error('Failed to load merchant forms');
       setForms(await formsRes.json());
       setDuplicates(dupRes.ok ? await dupRes.json() : []);
+      setEmpPoints(ptsRes.ok ? await ptsRes.json() : []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -541,6 +617,13 @@ export default function MerchantForms() {
   }, [forms, search]);
 
   const totalDupCount = duplicates.length;
+
+  // Map empName → points data
+  const empPointsMap = useMemo(() => {
+    const m = {};
+    empPoints.forEach(e => { m[e.newJoinerName] = e; });
+    return m;
+  }, [empPoints]);
 
   return (
     <Box sx={{ maxWidth: 1100, mx: 'auto', px: { xs: 2, md: 4 }, py: 4 }}>
@@ -656,13 +739,53 @@ export default function MerchantForms() {
         </Card>
       ) : (
         grouped.map(([empName, empForms]) => (
-          <EmployeeGroup key={empName} empName={empName} forms={empForms} duplicatePhones={duplicatePhones} />
+          <EmployeeGroup key={empName} empName={empName} forms={empForms}
+            duplicatePhones={duplicatePhones}
+            empPointsData={empPointsMap[empName]}
+            onEditPoints={handleEditPoints} />
         ))
       )}
 
       <DuplicatePanel duplicates={duplicates} open={dupOpen} onClose={() => setDupOpen(false)}
         onNotify={handleNotify} notifying={notifying}
         onSettle={handleSettle} settling={settling} />
+
+      {/* Edit Points Dialog */}
+      <Dialog open={editPtsOpen} onClose={() => setEditPtsOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800, color: BRAND.primary, pb: 1 }}>
+          ⭐ Edit Points — {editPtsEmp?.empName}
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ mb: 2, p: 1.5, bgcolor: '#fff8e1', borderRadius: 2, border: '1px solid #f4a261' }}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>Points criteria (Fully Verified only):</Typography>
+            {Object.entries(POINTS_MAP).map(([k, v]) => (
+              <Typography key={k} variant="caption" sx={{ display: 'block', color: '#e76f51', fontWeight: 600 }}>
+                {k}: {v} pts
+              </Typography>
+            ))}
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+            Auto-calculated points (from verified merchants): <strong style={{ color: '#e76f51' }}>{Math.round((editPtsEmp?.autoPoints || 0) * 10) / 10}</strong>
+          </Typography>
+          <TextField fullWidth size="small" type="number" label="Manual Adjustment (+ or -)"
+            value={editPtsValue}
+            onChange={e => setEditPtsValue(e.target.value)}
+            helperText="This value is added to the auto-calculated points. Use negative to subtract."
+            inputProps={{ step: 0.1 }} />
+          <Box sx={{ mt: 1.5, p: 1.5, bgcolor: '#e6f4ea', borderRadius: 2 }}>
+            <Typography variant="body2" fontWeight={700} sx={{ color: BRAND.primary }}>
+              Total Points: {Math.round(((editPtsEmp?.autoPoints || 0) + (parseFloat(editPtsValue) || 0)) * 10) / 10}
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setEditPtsOpen(false)} color="inherit">Cancel</Button>
+          <Button variant="contained" onClick={handleSavePoints} disabled={editPtsSaving}
+            sx={{ bgcolor: BRAND.primary, fontWeight: 700 }}>
+            {editPtsSaving ? 'Saving…' : 'Save Points'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar open={!!notifySnack} autoHideDuration={4000} onClose={() => setNotifySnack('')}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>

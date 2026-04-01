@@ -109,6 +109,10 @@
         <div class="kpi-label">Fully Verified</div>
         <div class="kpi-value" id="kpi_verified">-</div>
       </div>
+      <div class="kpi-card" id="kpi_card_points" style="border-top-color:#f4a261;cursor:default;">
+        <div class="kpi-label">⭐ Total Points</div>
+        <div class="kpi-value" id="kpi_points" style="color:#e76f51;">-</div>
+      </div>
     </div>
 
     <!-- My Merchants -->
@@ -275,6 +279,27 @@
       renderMerchants(filtered);
     });
 
+    // ── POINTS CRITERIA ──────────────────────────────────────
+    var POINTS_MAP = { 'Tide': 2, 'MSME': 0.3, 'Insurance': 1, 'Tide Credit Card': 1 };
+    var _pointsAdjustment = 0; // admin manual adjustment fetched from server
+
+    function calcPoints(forms, verifiedMap) {
+      var auto = 0;
+      forms.forEach(function(f) {
+        var info = verifiedMap[f.customerNumber];
+        if (info && info.status === 'Fully Verified') {
+          auto += POINTS_MAP[f.formFillingFor] || 0;
+        }
+      });
+      return Math.round((auto + _pointsAdjustment) * 10) / 10;
+    }
+
+    function getMerchantPoints(f, verifiedMap) {
+      var info = verifiedMap && verifiedMap[f.customerNumber];
+      if (!info || info.status !== 'Fully Verified') return null;
+      return POINTS_MAP[f.formFillingFor] || null;
+    }
+
     function updateKPIs(forms, verifiedMap) {
       document.getElementById('kpi_total').textContent   = forms.length;
       document.getElementById('kpi_onboard').textContent = forms.filter(function(f){ return f.status === 'Ready for Onboarding'; }).length;
@@ -282,9 +307,11 @@
       document.getElementById('kpi_error').textContent   = forms.filter(function(f){ return f.status === 'Try but not done due to error'; }).length;
       document.getElementById('kpi_revisit').textContent = forms.filter(function(f){ return f.status === 'Need to visit again'; }).length;
       if (verifiedMap) {
-        document.getElementById('kpi_verified').textContent = forms.filter(function(f){
+        var verifiedCount = forms.filter(function(f){
           return verifiedMap[f.customerNumber] && verifiedMap[f.customerNumber].status === 'Fully Verified';
         }).length;
+        document.getElementById('kpi_verified').textContent = verifiedCount;
+        document.getElementById('kpi_points').textContent   = calcPoints(allForms, verifiedMap);
       }
     }
 
@@ -333,6 +360,10 @@
           var sb = statusBg[f.status]    || '#f5f5f5';
           var product = f.formFillingFor || (f.attemptedProducts && f.attemptedProducts.join(', ')) || '-';
           var dateStr = new Date(f.createdAt).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'});
+          var pts = getMerchantPoints(f, verifiedMap);
+          var ptsBadge = pts !== null
+            ? '<div style="display:inline-flex;align-items:center;gap:3px;background:#fff8e1;color:#e76f51;border:1.5px solid #f4a261;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:800;margin-top:4px;">⭐ ' + pts + ' pts</div>'
+            : '';
           return '<a class="merchant-row" href="merchant-detail.html?id=' + f._id + '">'
             + '<div class="mr-avatar">' + f.customerName.charAt(0).toUpperCase() + '</div>'
             + '<div class="mr-info">'
@@ -345,6 +376,7 @@
             + '</div></div>'
             + '<div class="mr-right">'
             + '<span class="mr-status" style="color:' + sc + ';background:' + sb + '">' + f.status + '</span>'
+            + ptsBadge
             + '<div class="mr-date">' + dateStr + '</div>'
             + '</div></a>';
         }).join('');
@@ -381,6 +413,12 @@
       .catch(function(err){ console.error('Failed to load merchants', err); });
     }
     loadMerchants();
+
+    // Fetch admin points adjustment for this employee
+    fetch('/api/forms/my-points', { headers: { 'Authorization': 'Bearer ' + token } })
+      .then(function(r){ return r.json(); })
+      .then(function(d){ _pointsAdjustment = d.pointsAdjustment || 0; })
+      .catch(function(){});
 
     function checkRequestNotifications() {
       fetch('/api/requests/my-notifications', { headers: { 'Authorization': 'Bearer ' + token } })
