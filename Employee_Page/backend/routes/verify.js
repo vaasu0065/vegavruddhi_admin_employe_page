@@ -61,6 +61,37 @@ router.get('/bulk', verifyToken, async (req, res) => {
   }
 });
 
+// GET /api/verify/bulk-admin — same as bulk but no auth (for admin panel)
+router.get('/bulk-admin', async (req, res) => {
+  try {
+    const phones   = (req.query.phones   || '').split(',').map(p => p.trim()).filter(Boolean);
+    const names    = (req.query.names    || '').split(',').map(n => n.trim());
+    const products = (req.query.products || '').split(',').map(p => p.trim());
+    if (!phones.length) return res.json({});
+    const db     = mongoose.connection.db;
+    const result = {};
+
+    await Promise.all(phones.map(async (phone, i) => {
+      const name    = names[i]    || '';
+      const product = products[i] || '';
+      const [v, pc] = await Promise.all([
+        verifyMerchant(db, phone, name, VerificationRule, product),
+        crossCheckPhone(db, phone, name, VerificationRule, product)
+      ]);
+      result[phone] = {
+        status:     v.status,
+        matchType:  v.matchType,
+        phoneMatch: pc.phoneMatch,
+        inSheet:    pc.matched
+      };
+    }));
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // GET /api/verify/rules — list all rules (no auth needed for admin panel read)
 router.get('/rules', async (req, res) => {
   try {

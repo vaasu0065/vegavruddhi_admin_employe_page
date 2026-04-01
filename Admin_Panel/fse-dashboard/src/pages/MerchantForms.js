@@ -382,7 +382,7 @@ function EmployeeGroup({ empName, forms, duplicatePhones, empPointsData, onEditP
       const names    = forms.map(f => encodeURIComponent(f.customerName)).join(',');
       const products = forms.map(f => encodeURIComponent(f.formFillingFor || '')).join(',');
       const res = await fetch(
-        `${EMP_API}/verify/bulk?phones=${encodeURIComponent(phones)}&names=${names}&products=${products}`
+        `${EMP_API}/verify/bulk-admin?phones=${encodeURIComponent(phones)}&names=${names}&products=${products}`
       );
       if (res.ok) setVerifyMap(await res.json());
     } catch { /* ignore */ } finally { setVerifying(false); }
