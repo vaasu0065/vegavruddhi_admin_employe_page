@@ -66,7 +66,7 @@ export default function Register() {
 
     setLoading(true);
     try {
-      const res  = await fetch(`${API_BASE}/api/auth/register', { method: 'POST', body: fd });
+      const res  = await fetch(`${API_BASE}/api/auth/register`, { method: 'POST', body: fd });
       const data = await res.json();
       if (!res.ok) { setError(data.message || 'Registration failed'); return; }
       setSuccess('✓ Registration successful! Redirecting to login...');
